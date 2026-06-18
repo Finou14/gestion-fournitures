@@ -1,1 +1,1852 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Gestion Fournitures Scolaires</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.5.0/dist/chart.umd.js" integrity="sha384-iU8HYtnGQ8Cy4zl7gbNMOhsDTTKX02BTXptVP/vqAWIaTfM7isw76iyZCsjL2eVi" crossorigin="anonymous"></script>
+<style>
+:root { color-scheme: light; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #1a1a2e; min-height: 100vh; }
 
+/* ── LOGIN OVERLAY ── */
+#login-overlay {
+  position: fixed; inset: 0; background: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+  display: flex; align-items: center; justify-content: center; z-index: 9999;
+}
+.login-box {
+  background: #fff; border-radius: 20px; padding: 40px 36px; width: 360px;
+  box-shadow: 0 20px 60px rgba(0,0,0,.25); text-align: center;
+}
+.login-box .logo { font-size: 40px; margin-bottom: 12px; }
+.login-box h1 { font-size: 20px; font-weight: 700; color: #1a1a2e; margin-bottom: 4px; }
+.login-box p { font-size: 13px; color: #64748b; margin-bottom: 28px; }
+.login-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; text-align: left; }
+.login-field label { font-size: 12px; font-weight: 500; color: #374151; }
+.login-field input {
+  border: 1px solid #d1d5db; border-radius: 10px; padding: 11px 14px;
+  font-size: 14px; outline: none; transition: border .15s;
+}
+.login-field input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.12); }
+.login-btn {
+  width: 100%; background: #4f46e5; color: #fff; border: none; border-radius: 10px;
+  padding: 12px; font-size: 14px; font-weight: 600; cursor: pointer; margin-top: 8px;
+  transition: background .15s;
+}
+.login-btn:hover { background: #4338ca; }
+.login-error { color: #dc2626; font-size: 12px; margin-top: 10px; min-height: 18px; }
+.login-hint { margin-top: 18px; font-size: 11px; color: #94a3b8; }
+
+/* ── HEADER ── */
+header {
+  background: #fff; border-bottom: 1px solid #e2e8f0; padding: 12px 24px;
+  display: flex; align-items: center; gap: 12px;
+}
+header .logo { font-size: 22px; }
+header h1 { font-size: 17px; font-weight: 700; color: #1a1a2e; flex: 1; }
+.user-pill {
+  display: flex; align-items: center; gap: 8px; background: #f1f5f9;
+  border-radius: 99px; padding: 6px 14px; font-size: 12px; color: #374151;
+}
+.user-pill .avatar {
+  width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center;
+  justify-content: center; font-size: 11px; font-weight: 700; color: #fff;
+}
+.avatar.admin { background: #4f46e5; }
+.avatar.vendeur { background: #0891b2; }
+.role-badge { font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 99px; text-transform: uppercase; }
+.role-badge.admin { background: #ede9fe; color: #5b21b6; }
+.role-badge.vendeur { background: #cffafe; color: #0e7490; }
+.logout-btn {
+  background: none; border: 1px solid #e2e8f0; border-radius: 8px; padding: 5px 10px;
+  font-size: 12px; cursor: pointer; color: #64748b; transition: all .15s;
+}
+.logout-btn:hover { background: #fee2e2; color: #dc2626; border-color: #fca5a5; }
+
+/* ── NAV ── */
+nav { background: #fff; border-bottom: 1px solid #e2e8f0; padding: 0 24px; display: flex; gap: 4px; overflow-x: auto; }
+nav button {
+  background: none; border: none; padding: 12px 14px; font-size: 13px; font-weight: 500;
+  color: #64748b; cursor: pointer; border-bottom: 2px solid transparent; transition: all .15s; white-space: nowrap;
+}
+nav button:hover { color: #4f46e5; }
+nav button.active { color: #4f46e5; border-bottom-color: #4f46e5; }
+nav button:disabled { opacity: .35; cursor: not-allowed; }
+nav button:disabled:hover { color: #64748b; }
+
+/* ── MAIN ── */
+main { padding: 24px; max-width: 1100px; margin: 0 auto; }
+
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin-bottom: 24px; }
+.card { background: #fff; border-radius: 12px; padding: 20px; border: 1px solid #e2e8f0; }
+.card .label { font-size: 12px; color: #64748b; text-transform: uppercase; letter-spacing: .5px; margin-bottom: 8px; }
+.card .value { font-size: 26px; font-weight: 700; }
+.card .sub { font-size: 12px; color: #94a3b8; margin-top: 4px; }
+.card.green .value { color: #16a34a; }
+.card.blue .value { color: #2563eb; }
+.card.purple .value { color: #7c3aed; }
+.card.orange .value { color: #ea580c; }
+
+.section { background: #fff; border-radius: 12px; border: 1px solid #e2e8f0; padding: 24px; margin-bottom: 24px; }
+.section h2 { font-size: 15px; font-weight: 600; margin-bottom: 20px; color: #1a1a2e; }
+
+.form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 14px; }
+.form-group { display: flex; flex-direction: column; gap: 6px; }
+.form-group label { font-size: 12px; font-weight: 500; color: #374151; }
+.form-group input, .form-group select {
+  border: 1px solid #d1d5db; border-radius: 8px; padding: 9px 12px;
+  font-size: 13px; background: #fff; color: #1a1a2e; outline: none; transition: border .15s;
+}
+.form-group input:focus, .form-group select:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+.form-group input[readonly] { background: #f8fafc; color: #64748b; }
+.form-actions { margin-top: 16px; display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+
+.btn { padding: 9px 20px; border-radius: 8px; font-size: 13px; font-weight: 500; cursor: pointer; border: none; transition: all .15s; }
+.btn-primary { background: #4f46e5; color: #fff; }
+.btn-primary:hover { background: #4338ca; }
+.btn-secondary { background: #f1f5f9; color: #374151; }
+.btn-secondary:hover { background: #e2e8f0; }
+.btn-danger { background: #fee2e2; color: #dc2626; font-size: 12px; padding: 5px 10px; }
+.btn-danger:hover { background: #fecaca; }
+.btn-edit { background: #e0e7ff; color: #4338ca; font-size: 12px; padding: 5px 10px; }
+.btn-edit:hover { background: #c7d2fe; }
+.btn-sm { padding: 6px 14px; font-size: 12px; }
+
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { text-align: left; padding: 10px 12px; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; color: #64748b; border-bottom: 1px solid #e2e8f0; background: #f8fafc; }
+tbody tr { border-bottom: 1px solid #f1f5f9; transition: background .1s; }
+tbody tr:hover { background: #f8fafc; }
+tbody td { padding: 11px 12px; color: #1a1a2e; vertical-align: middle; }
+
+.badge { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 500; }
+.badge-buy { background: #dbeafe; color: #1d4ed8; }
+.badge-sell { background: #d1fae5; color: #065f46; }
+.badge-low { background: #fef3c7; color: #92400e; }
+.badge-ok { background: #d1fae5; color: #065f46; }
+.badge-cat { background: #ede9fe; color: #5b21b6; }
+
+.profit-pos { color: #16a34a; font-weight: 600; }
+.profit-neg { color: #dc2626; font-weight: 600; }
+.marge-pill { display: inline-block; padding: 2px 8px; border-radius: 99px; font-size: 11px; font-weight: 600; }
+.marge-pos { background: #d1fae5; color: #065f46; }
+.marge-neg { background: #fee2e2; color: #dc2626; }
+
+.chart-container { height: 220px; position: relative; }
+.empty { text-align: center; padding: 40px; color: #94a3b8; font-size: 13px; }
+.empty .icon { font-size: 32px; margin-bottom: 8px; }
+
+.tab-content { display: none; }
+.tab-content.active { display: block; }
+
+.notif { position: fixed; bottom: 24px; right: 24px; background: #1a1a2e; color: #fff; padding: 12px 18px; border-radius: 10px; font-size: 13px; opacity: 0; transform: translateY(10px); transition: all .3s; pointer-events: none; z-index: 9998; }
+.notif.show { opacity: 1; transform: translateY(0); }
+
+.art-hint { background: #eef2ff; border: 1px solid #c7d2fe; border-radius: 8px; padding: 10px 14px; font-size: 12px; color: #4338ca; margin-bottom: 16px; }
+
+.search-bar { display: flex; gap: 8px; flex-wrap: wrap; align-items: center; }
+.search-bar input, .search-bar select { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; font-size: 12px; background: #fff; outline: none; }
+.search-bar input { width: 190px; }
+.search-bar input:focus, .search-bar select:focus { border-color: #4f46e5; }
+
+/* ── CATEGORIES ── */
+.cat-section { border-top: 1px solid #e2e8f0; margin-top: 8px; padding-top: 20px; }
+.cat-section h3 { font-size: 14px; font-weight: 600; color: #1a1a2e; margin-bottom: 14px; }
+.cat-chips { display: flex; flex-wrap: wrap; gap: 8px; }
+.cat-chip { display: inline-flex; align-items: center; gap: 6px; border-radius: 99px; padding: 5px 10px 5px 14px; font-size: 12px; font-weight: 500; border: 1px solid transparent; }
+.cat-chip.custom { background: #ede9fe; color: #5b21b6; border-color: #c4b5fd; }
+.cat-chip.builtin { background: #f1f5f9; color: #475569; border-color: #e2e8f0; }
+.cat-chip .del-btn { background: none; border: none; cursor: pointer; font-size: 14px; line-height: 1; padding: 0 2px; opacity: .5; color: inherit; }
+.cat-chip .del-btn:hover { opacity: 1; }
+.cat-add-row { display: flex; gap: 8px; margin-top: 14px; align-items: center; }
+.cat-add-row input { border: 1px solid #d1d5db; border-radius: 8px; padding: 8px 12px; font-size: 13px; width: 230px; outline: none; background: #fff; }
+.cat-add-row input:focus { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+.cat-empty { font-size: 13px; color: #94a3b8; font-style: italic; }
+
+/* ── PHOTO ── */
+.photo-upload-area {
+  border: 2px dashed #d1d5db; border-radius: 10px; padding: 14px 16px;
+  text-align: center; background: #fafafa; position: relative;
+}
+.photo-upload-area .icon { font-size: 24px; margin-bottom: 6px; }
+.photo-upload-area p { font-size: 12px; color: #64748b; margin-bottom: 10px; }
+.photo-source-btns { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; }
+.photo-source-btn {
+  position: relative; overflow: hidden;
+  display: inline-flex; align-items: center; gap: 6px;
+  background: #4f46e5; color: #fff; border: none; border-radius: 8px;
+  padding: 9px 16px; font-size: 13px; font-weight: 500; cursor: pointer; transition: background .15s;
+}
+.photo-source-btn.gallery { background: #f1f5f9; color: #374151; }
+.photo-source-btn:hover { background: #4338ca; }
+.photo-source-btn.gallery:hover { background: #e2e8f0; }
+.photo-source-btn input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
+.photo-preview-wrap { position: relative; display: inline-block; cursor: pointer; }
+.photo-preview { width: 120px; height: 120px; object-fit: cover; border-radius: 10px; border: 2px solid #e2e8f0; display: block; transition: border .15s; }
+.photo-preview-wrap:hover .photo-preview { border-color: #4f46e5; }
+.photo-preview-overlay {
+  position: absolute; inset: 0; border-radius: 10px;
+  background: rgba(79,70,229,.55); display: flex; flex-direction: column; align-items: center; justify-content: center;
+  opacity: 0; transition: opacity .2s; gap: 4px;
+}
+.photo-preview-wrap:hover .photo-preview-overlay { opacity: 1; }
+.photo-preview-overlay span { color: #fff; font-size: 11px; font-weight: 600; }
+.photo-preview-overlay-btns { display: flex; gap: 6px; margin-top: 6px; }
+.photo-overlay-btn {
+  position: relative; overflow: hidden;
+  background: rgba(255,255,255,.2); border: 1px solid rgba(255,255,255,.5);
+  color: #fff; border-radius: 6px; padding: 5px 8px; font-size: 11px; cursor: pointer;
+}
+.photo-overlay-btn input[type=file] { position: absolute; inset: 0; opacity: 0; cursor: pointer; width: 100%; height: 100%; font-size: 0; }
+.photo-remove { position: absolute; top: -6px; right: -6px; background: #dc2626; color: #fff; border: none; border-radius: 50%; width: 22px; height: 22px; font-size: 14px; cursor: pointer; display: flex; align-items: center; justify-content: center; z-index: 2; }
+.photo-thumb { width: 44px; height: 44px; object-fit: cover; border-radius: 8px; border: 1px solid #e2e8f0; display: block; }
+.no-photo { width: 44px; height: 44px; background: #f1f5f9; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; color: #cbd5e1; }
+
+/* ── USERS ── */
+.user-card {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; margin-bottom: 10px;
+}
+.user-card .ua { width: 40px; height: 40px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 16px; font-weight: 700; color: #fff; flex-shrink: 0; }
+.user-card .ua.admin { background: linear-gradient(135deg,#4f46e5,#7c3aed); }
+.user-card .ua.vendeur { background: linear-gradient(135deg,#0891b2,#0e7490); }
+.user-card .info { flex: 1; }
+.user-card .info strong { font-size: 14px; }
+.user-card .info span { font-size: 12px; color: #64748b; margin-left: 8px; }
+.user-card .actions { display: flex; gap: 8px; }
+.pw-change { background: #f8fafc; border-radius: 10px; padding: 14px 16px; margin-top: 10px; border: 1px solid #e2e8f0; display: none; }
+.pw-change.open { display: block; }
+
+/* ── FOURNISSEURS ── */
+.fourn-card {
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  border: 1px solid #e2e8f0; border-radius: 12px; background: #fff; margin-bottom: 10px;
+  cursor: pointer; transition: border .15s, box-shadow .15s;
+}
+.fourn-card:hover { border-color: #a5b4fc; box-shadow: 0 2px 8px rgba(79,70,229,.08); }
+.fourn-card.selected { border-color: #4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.1); }
+.fourn-avatar {
+  width: 42px; height: 42px; border-radius: 10px; background: linear-gradient(135deg,#4f46e5,#7c3aed);
+  display: flex; align-items: center; justify-content: center; font-size: 18px; flex-shrink: 0;
+}
+.fourn-info { flex: 1; }
+.fourn-info strong { font-size: 14px; }
+.fourn-info .meta { font-size: 12px; color: #64748b; margin-top: 2px; }
+.fourn-actions { display: flex; gap: 6px; }
+
+/* Price comparison table */
+.price-table th.best { background: #d1fae5 !important; color: #065f46; }
+.price-cell { text-align: right; }
+.price-cell.best-price { background: #f0fdf4; font-weight: 700; color: #16a34a; }
+.price-cell.worst-price { color: #94a3b8; }
+.price-tag { display: inline-flex; align-items: center; gap: 4px; }
+.crown { font-size: 11px; }
+
+/* Bon de commande */
+.bc-fourn-block { border: 1px solid #e2e8f0; border-radius: 12px; margin-bottom: 16px; overflow: hidden; }
+.bc-fourn-header { background: linear-gradient(135deg,#4f46e5,#7c3aed); color: #fff; padding: 12px 18px; display: flex; align-items: center; justify-content: space-between; }
+.bc-fourn-header h3 { font-size: 14px; font-weight: 600; }
+.bc-fourn-body { padding: 0; }
+.bc-total-row { background: #f8fafc; font-weight: 600; }
+
+/* ── NIVEAU ── */
+.badge-primaire  { background:#dbeafe; color:#1d4ed8; font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px; white-space:nowrap; }
+.badge-secondaire{ background:#ede9fe; color:#5b21b6; font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px; white-space:nowrap; }
+.badge-tous      { background:#f1f5f9; color:#475569; font-size:10px; font-weight:600; padding:2px 7px; border-radius:99px; white-space:nowrap; }
+
+/* ── RUPTURE ── */
+.badge-rupture { background: #fee2e2; color: #dc2626; font-weight: 700; font-size: 10px; padding: 2px 7px; border-radius: 99px; letter-spacing: .03em; text-transform: uppercase; }
+.tarif-row-rupture { opacity: .55; }
+.tarif-row-rupture td:first-child { text-decoration: line-through; }
+.btn-rupture { background: #fee2e2; color: #dc2626; border: none; border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-rupture:hover { background: #fecaca; }
+.btn-dispo { background: #d1fae5; color: #065f46; border: none; border-radius: 8px; padding: 5px 10px; font-size: 11px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+.btn-dispo:hover { background: #a7f3d0; }
+
+/* ── ACCESS DENIED ── */
+.access-denied { text-align: center; padding: 60px 20px; color: #94a3b8; }
+.access-denied .icon { font-size: 48px; margin-bottom: 12px; }
+.access-denied h3 { font-size: 16px; color: #64748b; margin-bottom: 6px; }
+
+/* ── MOBILE ── */
+@media (max-width: 640px) {
+  /* Login */
+  .login-box { width: calc(100vw - 32px); padding: 28px 18px; border-radius: 16px; }
+  .login-box h1 { font-size: 17px; }
+
+  /* Header */
+  header { padding: 9px 12px; gap: 8px; flex-wrap: wrap; }
+  header h1 { font-size: 13px; flex: 1; min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .user-pill { padding: 4px 8px; gap: 5px; font-size: 11px; }
+  .role-badge { display: none; }
+  .logout-btn { padding: 5px 8px; font-size: 11px; }
+
+  /* Nav → sticky bottom bar */
+  nav {
+    position: fixed; bottom: 0; left: 0; right: 0; z-index: 300;
+    padding: 0 2px 2px; gap: 0; border-top: 1px solid #e2e8f0; border-bottom: none;
+    display: flex; overflow-x: auto; background: #fff;
+    box-shadow: 0 -2px 12px rgba(0,0,0,.10);
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+  }
+  nav::-webkit-scrollbar { display: none; }
+  nav button {
+    flex: 1 0 auto; min-width: 52px; padding: 6px 6px 7px;
+    font-size: 9.5px; display: flex; flex-direction: column; align-items: center;
+    gap: 2px; border-bottom: none; border-top: 2px solid transparent;
+    line-height: 1.2; white-space: nowrap;
+  }
+  nav button.active { border-top-color: #4f46e5; border-bottom-color: transparent; background: #eef2ff; color: #4f46e5; }
+
+  /* Main – space for fixed nav */
+  main { padding: 12px 10px 76px; }
+
+  /* Stats cards */
+  .cards { grid-template-columns: 1fr 1fr; gap: 8px; margin-bottom: 12px; }
+  .card { padding: 12px 10px; border-radius: 10px; }
+  .card .label { font-size: 10px; margin-bottom: 4px; }
+  .card .value { font-size: 18px; }
+  .card .sub { font-size: 10px; }
+
+  /* Dashboard charts: stack */
+  .dash-charts { grid-template-columns: 1fr !important; gap: 10px !important; }
+  .chart-container { height: 180px; }
+
+  /* Sections */
+  .section { padding: 14px 12px; border-radius: 10px; margin-bottom: 12px; }
+  .section h2 { font-size: 14px; margin-bottom: 12px; }
+
+  /* Forms: single column */
+  .form-grid { grid-template-columns: 1fr; gap: 10px; }
+  .form-actions { flex-direction: column; gap: 8px; }
+  .form-actions .btn { width: 100%; text-align: center; min-height: 44px; font-size: 14px; }
+  .form-actions span[id] { margin-left: 0 !important; text-align: center; font-size: 14px; font-weight: 600; }
+
+  /* Inputs — font-size 16px = no iOS zoom */
+  .form-group input, .form-group select,
+  .login-field input, .search-bar input, .search-bar select {
+    font-size: 16px; padding: 11px 12px;
+  }
+  .form-group label { font-size: 13px; }
+
+  /* Buttons */
+  .btn { min-height: 40px; }
+  .btn-danger, .btn-edit { min-height: 36px; }
+
+  /* Search bar */
+  .search-bar { flex-direction: column; align-items: stretch; }
+  .search-bar input, .search-bar select { width: 100%; }
+  [style*="justify-content:space-between"] { flex-direction: column !important; align-items: stretch !important; gap: 10px !important; }
+
+  /* Tables */
+  .table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; border-radius: 8px; }
+  table { font-size: 12px; }
+  thead th { padding: 8px 8px; font-size: 10px; }
+  tbody td { padding: 8px 8px; }
+
+  /* Articles sub-row supplier table */
+  .fourn-sub-table { min-width: 340px; }
+
+  /* Notification above bottom nav */
+  .notif { bottom: 78px; right: 12px; left: 12px; text-align: center; border-radius: 10px; }
+
+  /* Fournisseur cards */
+  .fourn-card { padding: 10px 12px; gap: 10px; }
+
+  /* Category add row */
+  .cat-add-row { flex-direction: column; }
+  .cat-add-row input { width: 100%; }
+  .cat-add-row .btn { width: 100%; min-height: 42px; }
+
+  /* Historique filter row */
+  .hist-filter-row { flex-direction: column !important; align-items: stretch !important; gap: 8px !important; }
+  .hist-filter-row select, .hist-filter-row input { font-size: 15px; padding: 9px 12px; width: 100% !important; }
+
+  /* Bon de commande */
+  .bc-fourn-header { flex-direction: column; align-items: flex-start; gap: 4px; }
+
+  /* Photo area */
+  .photo-upload-area { padding: 20px 12px; }
+  .photo-preview { width: 90px; height: 90px; }
+}
+</style>
+</head>
+<body>
+
+<!-- ══ LOGIN OVERLAY ══ -->
+<div id="login-overlay">
+  <div class="login-box">
+    <div class="logo">🎒</div>
+    <h1>Fournitures Scolaires</h1>
+    <p>Connectez-vous pour accéder à l'application</p>
+    <div class="login-field">
+      <label>Nom d'utilisateur</label>
+      <input type="text" id="login-username" placeholder="ex: admin" autocomplete="username"
+        onkeydown="if(event.key==='Enter') document.getElementById('login-password').focus()">
+    </div>
+    <div class="login-field">
+      <label>Mot de passe</label>
+      <input type="password" id="login-password" placeholder="••••••••" autocomplete="current-password"
+        onkeydown="if(event.key==='Enter') doLogin()">
+    </div>
+    <button class="login-btn" onclick="doLogin()">Se connecter</button>
+    <div class="login-error" id="login-error"></div>
+  </div>
+</div>
+
+<!-- ══ APP ══ -->
+<div id="app" style="display:none;">
+
+<header>
+  <span class="logo">🎒</span>
+  <h1>Gestion Fournitures Scolaires</h1>
+  <div class="user-pill">
+    <div class="avatar" id="header-avatar"></div>
+    <span id="header-username"></span>
+    <span class="role-badge" id="header-role"></span>
+  </div>
+  <button class="logout-btn" onclick="doLogout()">⎋ Déconnexion</button>
+</header>
+
+<nav id="main-nav">
+  <button class="active" onclick="switchTab('dashboard')">📊 Tableau de bord</button>
+  <button onclick="switchTab('articles')">📚 Base articles</button>
+  <button onclick="switchTab('achat')">🛒 Nouvel achat</button>
+  <button onclick="switchTab('vente')">💰 Nouvelle vente</button>
+  <button onclick="switchTab('stock')">📦 Stock</button>
+  <button onclick="switchTab('historique')">📋 Historique</button>
+  <button onclick="switchTab('fournisseurs')">🏪 Fournisseurs</button>
+  <button id="nav-users" onclick="switchTab('users')" style="display:none;">👥 Utilisateurs</button>
+</nav>
+
+<main>
+
+  <!-- ══ DASHBOARD ══ -->
+  <div id="tab-dashboard" class="tab-content active">
+    <div class="cards">
+      <div class="card blue"><div class="label">Total investi</div><div class="value" id="stat-investi">0 Ar</div><div class="sub">coût total des achats</div></div>
+      <div class="card green"><div class="label">Revenus ventes</div><div class="value" id="stat-revenus">0 Ar</div><div class="sub">total encaissé</div></div>
+      <div class="card purple"><div class="label">Bénéfice net</div><div class="value" id="stat-benefice">0 Ar</div><div class="sub">ventes − achats vendus</div></div>
+      <div class="card orange"><div class="label">Articles catalogue</div><div class="value" id="stat-catalogue">0</div><div class="sub">références enregistrées</div></div>
+      <div class="card"><div class="label">Unités en stock</div><div class="value" id="stat-stock">0</div><div class="sub">toutes références</div></div>
+    </div>
+    <div class="dash-charts" style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+      <div class="section"><h2>Évolution des transactions</h2><div class="chart-container"><canvas id="chartTransactions"></canvas></div></div>
+      <div class="section"><h2>Articles les plus achetés</h2><div class="chart-container"><canvas id="chartArticles"></canvas></div></div>
+    </div>
+    <div class="section" style="margin-top:16px;"><h2>Dernières transactions</h2><div class="table-wrap" id="recent-transactions"></div></div>
+  </div>
+
+  <!-- ══ BASE ARTICLES ══ -->
+  <div id="tab-articles" class="tab-content">
+    <div class="section">
+      <h2 id="art-form-title">➕ Ajouter un article au catalogue</h2>
+      <input type="hidden" id="art-edit-id">
+      <div class="art-hint">💡 Les prix par défaut se pré-remplissent lors d'un achat ou d'une vente.</div>
+      <div class="form-grid">
+        <div class="form-group"><label>Nom de l'article *</label><input type="text" id="art-nom" placeholder="ex: Cahier 200 pages"></div>
+        <div class="form-group"><label>Niveau scolaire *</label>
+          <select id="art-niveau">
+            <option value="Primaire">🏫 Primaire (CP → CM2)</option>
+            <option value="Secondaire">🎓 Secondaire (6ème → Terminale)</option>
+            <option value="Tous niveaux" selected>📚 Tous niveaux</option>
+          </select>
+        </div>
+        <div class="form-group"><label>Catégorie *</label><select id="art-categorie"></select></div>
+        <div class="form-group"><label>Unité</label>
+          <select id="art-unite"><option value="pièce">pièce</option><option value="lot">lot</option><option value="pack">pack</option><option value="boîte">boîte</option><option value="rame">rame</option></select>
+        </div>
+        <div class="form-group"><label>Prix d'achat par défaut (Ar)</label><input type="number" id="art-prix-achat" placeholder="ex: 500" min="0" oninput="updateArtMarge()"></div>
+        <div class="form-group"><label>Prix de vente par défaut (Ar)</label><input type="number" id="art-prix-vente" placeholder="ex: 800" min="0" oninput="updateArtMarge()"></div>
+        <div class="form-group"><label>Marge estimée</label><input type="text" id="art-marge-preview" readonly placeholder="—"></div>
+      </div>
+      <div class="form-grid" style="margin-top:14px;">
+        <div class="form-group"><label>Description / notes</label><input type="text" id="art-description" placeholder="ex: Petits carreaux, couverture rigide"></div>
+        <div class="form-group">
+          <label>Photo de l'article</label>
+          <div id="art-photo-container">
+            <div class="photo-upload-area" id="art-photo-dropzone">
+              <div class="icon">📷</div>
+              <p>Ajouter une photo de l'article</p>
+              <div class="photo-source-btns">
+                <label class="photo-source-btn">
+                  📷 Caméra
+                  <input type="file" accept="image/*" capture="environment" onchange="onPhotoSelected(event)">
+                </label>
+                <label class="photo-source-btn gallery">
+                  🖼️ Galerie
+                  <input type="file" accept="image/*" onchange="onPhotoSelected(event)">
+                </label>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveArticle()">💾 Enregistrer</button>
+        <button class="btn btn-secondary" onclick="resetArtForm()">Annuler</button>
+      </div>
+    </div>
+    <div class="section">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:10px;">
+        <h2 style="margin:0;">📋 Catalogue (<span id="art-count">0</span> articles)</h2>
+        <div class="search-bar">
+          <input type="text" id="art-search" placeholder="Rechercher..." oninput="renderArticles()">
+          <select id="art-filter-niveau" onchange="renderArticles()">
+            <option value="">Tous niveaux</option>
+            <option value="Primaire">🏫 Primaire</option>
+            <option value="Secondaire">🎓 Secondaire</option>
+          </select>
+          <select id="art-filter-cat" onchange="renderArticles()"><option value="">Toutes catégories</option></select>
+        </div>
+      </div>
+      <div class="table-wrap" id="articles-table-wrap"></div>
+    </div>
+    <div class="section">
+      <h2>🏷️ Gérer les catégories</h2>
+      <div class="cat-section">
+        <h3>Catégories par défaut <span style="font-size:11px;font-weight:400;color:#94a3b8">(non supprimables)</span></h3>
+        <div class="cat-chips" id="cat-builtin-chips"></div>
+      </div>
+      <div class="cat-section" style="margin-top:20px;">
+        <h3>Catégories personnalisées</h3>
+        <div class="cat-chips" id="cat-custom-chips"><span class="cat-empty" id="cat-empty-msg">Aucune catégorie personnalisée.</span></div>
+        <div class="cat-add-row">
+          <input type="text" id="cat-new-input" placeholder="Nouvelle catégorie..." maxlength="40" onkeydown="if(event.key==='Enter') addCategory()">
+          <button class="btn btn-primary btn-sm" onclick="addCategory()">+ Ajouter</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ ACHAT ══ -->
+  <div id="tab-achat" class="tab-content">
+    <div class="section">
+      <h2>🛒 Enregistrer un achat</h2>
+      <div class="form-grid">
+        <div class="form-group"><label>Article *</label>
+          <select id="a-article" onchange="onAchatArticleChange()">
+            <option value="">-- Choisir dans le catalogue --</option>
+            <option value="__custom__">✏️ Article hors catalogue</option>
+          </select>
+        </div>
+        <div class="form-group" id="a-custom-group" style="display:none;"><label>Nom *</label><input type="text" id="a-article-custom" placeholder="ex: Cahier 100p"></div>
+        <div class="form-group"><label>Catégorie</label><select id="a-categorie"></select></div>
+        <div class="form-group"><label>Quantité *</label><input type="number" id="a-qte" placeholder="ex: 10" min="1" oninput="updateAchatTotal()"></div>
+        <div class="form-group"><label>Prix d'achat unitaire (Ar) *</label><input type="number" id="a-prix" placeholder="ex: 500" min="0" oninput="updateAchatTotal()"></div>
+        <div class="form-group"><label>Fournisseur</label><select id="a-fournisseur"><option value="">— Aucun / non renseigné —</option></select></div>
+        <div class="form-group"><label>Date *</label><input type="date" id="a-date"></div>
+      </div>
+      <div class="form-group" style="margin-top:14px;"><label>Notes</label><input type="text" id="a-notes" placeholder="Remarques optionnelles..."></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addAchat()">Enregistrer l'achat</button>
+        <button class="btn btn-secondary" onclick="resetAchat()">Annuler</button>
+        <span id="a-total" style="font-size:13px;color:#64748b;margin-left:auto;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ VENTE ══ -->
+  <div id="tab-vente" class="tab-content">
+    <div class="section">
+      <h2>💰 Enregistrer une vente</h2>
+      <div class="form-grid">
+        <div class="form-group"><label>Article *</label><select id="v-article" onchange="updateVenteStock()"><option value="">-- Choisir un article --</option></select></div>
+        <div class="form-group"><label>Stock disponible</label><input type="text" id="v-stock-dispo" readonly></div>
+        <div class="form-group"><label>Quantité *</label><input type="number" id="v-qte" placeholder="ex: 3" min="1" oninput="updateVenteMarge()"></div>
+        <div class="form-group"><label>Prix de vente unitaire (Ar) *</label><input type="number" id="v-prix" placeholder="ex: 800" min="0" oninput="updateVenteMarge()"></div>
+        <div class="form-group"><label>Acheteur</label><input type="text" id="v-acheteur" placeholder="ex: Élève Rakoto"></div>
+        <div class="form-group"><label>Date *</label><input type="date" id="v-date"></div>
+      </div>
+      <div class="form-group" style="margin-top:14px;"><label>Notes</label><input type="text" id="v-notes" placeholder="Remarques optionnelles..."></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="addVente()">Enregistrer la vente</button>
+        <button class="btn btn-secondary" onclick="resetVente()">Annuler</button>
+        <span id="v-marge" style="font-size:13px;margin-left:auto;"></span>
+      </div>
+    </div>
+  </div>
+
+  <!-- ══ STOCK ══ -->
+  <div id="tab-stock" class="tab-content">
+    <div class="section"><h2>📦 Stock actuel</h2><div id="stock-table-wrap" class="table-wrap"></div></div>
+  </div>
+
+  <!-- ══ HISTORIQUE ══ -->
+  <div id="tab-historique" class="tab-content">
+    <div class="section">
+      <div class="hist-filter-row" style="display:flex;align-items:center;justify-content:space-between;margin-bottom:16px;flex-wrap:wrap;gap:8px;">
+        <h2 style="margin:0;">📋 Historique des transactions</h2>
+        <div style="display:flex;gap:8px;flex-wrap:wrap;">
+          <select id="filter-type" onchange="renderHistorique()" style="border:1px solid #d1d5db;border-radius:8px;padding:7px 10px;font-size:12px;">
+            <option value="">Tout</option><option value="achat">Achats</option><option value="vente">Ventes</option>
+          </select>
+          <input type="text" id="filter-search" placeholder="Rechercher..." oninput="renderHistorique()" style="border:1px solid #d1d5db;border-radius:8px;padding:7px 12px;font-size:12px;width:160px;">
+          <button class="btn btn-danger btn-sm" id="btn-clear-all" onclick="clearAll()">🗑 Tout effacer</button>
+        </div>
+      </div>
+      <div id="historique-table-wrap" class="table-wrap"></div>
+    </div>
+  </div>
+
+  <!-- ══ FOURNISSEURS ══ -->
+  <div id="tab-fournisseurs" class="tab-content">
+
+    <!-- Form -->
+    <div class="section">
+      <h2 id="fourn-form-title">➕ Ajouter un fournisseur</h2>
+      <input type="hidden" id="fourn-edit-id">
+      <div class="form-grid">
+        <div class="form-group"><label>Nom *</label><input type="text" id="fourn-nom" placeholder="ex: Librairie Centrale"></div>
+        <div class="form-group"><label>Téléphone</label><input type="text" id="fourn-tel" placeholder="ex: 034 00 000 00"></div>
+        <div class="form-group"><label>Email</label><input type="text" id="fourn-email" placeholder="ex: contact@librairie.mg"></div>
+        <div class="form-group"><label>Adresse</label><input type="text" id="fourn-adresse" placeholder="ex: Analakely, Antananarivo"></div>
+      </div>
+      <div class="form-group" style="margin-top:14px;"><label>Notes</label><input type="text" id="fourn-notes" placeholder="Remarques..."></div>
+      <div class="form-actions">
+        <button class="btn btn-primary" onclick="saveFournisseur()">💾 Enregistrer</button>
+        <button class="btn btn-secondary" onclick="resetFournForm()">Annuler</button>
+      </div>
+    </div>
+
+    <!-- List -->
+    <div class="section">
+      <h2>📋 Fournisseurs (<span id="fourn-count">0</span>)</h2>
+      <div id="fournisseurs-list"></div>
+    </div>
+
+    <!-- Tarifs per supplier -->
+    <div class="section" id="tarif-section" style="display:none;">
+      <div id="tarif-fourn-header" style="margin-bottom:20px;"></div>
+      <h2>Ajouter / modifier un tarif</h2>
+      <div class="form-grid" style="margin-bottom:14px;">
+        <div class="form-group"><label>Article *</label><select id="tarif-article"></select></div>
+        <div class="form-group"><label>Prix d'achat unitaire (Ar) *</label><input type="number" id="tarif-prix" placeholder="ex: 450" min="0"></div>
+        <div class="form-group"><label>Délai livraison (jours)</label><input type="number" id="tarif-delai" placeholder="ex: 2" min="0"></div>
+        <div class="form-group"><label>Qté minimum commande</label><input type="number" id="tarif-qtemin" placeholder="ex: 10" min="0"></div>
+      </div>
+      <div class="form-group" style="margin-bottom:14px;"><label>Notes</label><input type="text" id="tarif-notes" placeholder="ex: remise possible dès 50 unités"></div>
+      <div class="form-actions" style="margin-bottom:20px;">
+        <button class="btn btn-primary btn-sm" onclick="saveTarif()">+ Enregistrer ce tarif</button>
+      </div>
+      <div id="tarif-table-wrap" class="table-wrap"></div>
+    </div>
+
+    <!-- Price comparison -->
+    <div class="section">
+      <h2>📊 Comparateur de prix — tous fournisseurs</h2>
+      <div class="art-hint" style="margin-bottom:16px;">🏆 Le prix le plus bas par article est mis en vert.</div>
+      <div id="price-comparison-wrap"></div>
+    </div>
+
+    <!-- Purchase order generator -->
+    <div class="section">
+      <h2>🛒 Générateur de bon de commande</h2>
+      <div class="art-hint" style="margin-bottom:16px;">Entrez les quantités à commander. Le système choisit automatiquement le fournisseur le moins cher pour chaque article.</div>
+      <div id="bon-commande-form"></div>
+      <div class="form-actions" style="margin-top:16px;">
+        <button class="btn btn-primary" onclick="generateBonCommande()">📄 Générer les bons de commande</button>
+      </div>
+      <div id="bon-commande-result" style="margin-top:24px;"></div>
+    </div>
+  </div>
+
+  <!-- ══ UTILISATEURS (admin only) ══ -->
+  <div id="tab-users" class="tab-content">
+    <div class="section">
+      <h2>➕ Créer un utilisateur</h2>
+      <div class="form-grid">
+        <div class="form-group"><label>Nom d'utilisateur *</label><input type="text" id="nu-username" placeholder="ex: vendeur1"></div>
+        <div class="form-group"><label>Mot de passe *</label><input type="password" id="nu-password" placeholder="Min. 4 caractères"></div>
+        <div class="form-group"><label>Confirmer le mot de passe *</label><input type="password" id="nu-confirm" placeholder="Répéter le mot de passe"></div>
+        <div class="form-group"><label>Rôle *</label>
+          <select id="nu-role"><option value="vendeur">Vendeur</option><option value="admin">Admin</option></select>
+        </div>
+      </div>
+      <div class="form-actions"><button class="btn btn-primary" onclick="createUser()">Créer l'utilisateur</button></div>
+    </div>
+    <div class="section">
+      <h2>👥 Comptes utilisateurs</h2>
+      <div id="users-list"></div>
+    </div>
+  </div>
+
+</main>
+</div><!-- /#app -->
+
+<div class="notif" id="notif"></div>
+
+<script>
+// ═══════════════════════════════════════════════════════════
+//  DATA
+// ═══════════════════════════════════════════════════════════
+const STORAGE_KEY = 'fournitures_v5';
+const BUILTIN_CATEGORIES = ['Cahiers & blocs','Stylos & crayons','Classeurs & pochettes','Protèges','Calculatrices','Règles & compas','Sacs & trousses','Livres & manuels','Autre'];
+
+function hashPw(pw) {
+  // Simple deterministic hash (not cryptographic — sufficient for local app)
+  let h = 0;
+  for (let i = 0; i < pw.length; i++) h = Math.imul(31, h) + pw.charCodeAt(i) | 0;
+  return h.toString(16);
+}
+
+function loadData() {
+  try {
+    const d = JSON.parse(localStorage.getItem(STORAGE_KEY));
+    if (d) return d;
+    const old = JSON.parse(localStorage.getItem('fournitures_v4')) ||
+                JSON.parse(localStorage.getItem('fournitures_v3')) ||
+                JSON.parse(localStorage.getItem('fournitures_v2'));
+    return {
+      transactions: old ? old.transactions : [],
+      articles: old ? (old.articles||[]) : [],
+      customCategories: old ? (old.customCategories||[]) : [],
+      users: []
+    };
+  } catch(e) { return { transactions:[], articles:[], customCategories:[], users:[] }; }
+}
+function saveData() { localStorage.setItem(STORAGE_KEY, JSON.stringify(db)); }
+
+let db = loadData();
+if (!db.articles) db.articles = [];
+if (!db.customCategories) db.customCategories = [];
+if (!db.users) db.users = [];
+if (!db.fournisseurs) db.fournisseurs = [];
+if (!db.tarifs) db.tarifs = [];
+
+// Pre-fill articles catalogue — runs on first use OR if no article has a niveau field (migration from old seed)
+if (!db.articles.length || !db.articles.some(a => a.niveau)) {
+  db.articles = []; // clear old seedless articles
+  const P = 'Primaire', S = 'Secondaire', T = 'Tous niveaux';
+  const seed = [
+    // ── CAHIERS & BLOCS ─────────────────────────────────
+    { niveau:P, nom:'Cahier Séyès 17×22 cm 96 pages',        categorie:'Cahiers & blocs',      unite:'pièce', description:'CP-CE1 — lignes Séyès grands interlignes' },
+    { niveau:P, nom:'Cahier Séyès 17×22 cm 192 pages',       categorie:'Cahiers & blocs',      unite:'pièce', description:'CE2-CM2 — lignes Séyès petits interlignes' },
+    { niveau:P, nom:'Cahier petits carreaux 17×22 cm 96p',   categorie:'Cahiers & blocs',      unite:'pièce', description:'5×5 mm — CE2 à CM2' },
+    { niveau:P, nom:'Cahier de musique 17×22 cm',            categorie:'Cahiers & blocs',      unite:'pièce', description:'Portées + quadrillage' },
+    { niveau:P, nom:'Cahier de dessin grand format',         categorie:'Cahiers & blocs',      unite:'pièce', description:'Feuilles blanches 240×320 mm' },
+    { niveau:P, nom:'Cahier de brouillon primaire',          categorie:'Cahiers & blocs',      unite:'pièce', description:'Grands carreaux, couverture rigide' },
+    { niveau:P, nom:'Carnet de correspondance',              categorie:'Cahiers & blocs',      unite:'pièce', description:'Primaire — liaison école/famille' },
+    { niveau:S, nom:'Cahier petits carreaux A4 200 pages',   categorie:'Cahiers & blocs',      unite:'pièce', description:'5×5 mm — toutes matières collège/lycée' },
+    { niveau:S, nom:'Cahier Séyès A4 200 pages',             categorie:'Cahiers & blocs',      unite:'pièce', description:'Français & langues — collège/lycée' },
+    { niveau:S, nom:'Cahier de brouillon A4',                categorie:'Cahiers & blocs',      unite:'pièce', description:'Recyclé, grands carreaux' },
+    { niveau:S, nom:'Cahier de textes / agenda A5',          categorie:'Cahiers & blocs',      unite:'pièce', description:'Semainier scolaire' },
+    { niveau:S, nom:'Bloc-notes A4 50 feuillets',            categorie:'Cahiers & blocs',      unite:'pièce', description:'Feuillets détachables, perforés' },
+    // ── STYLOS & CRAYONS ────────────────────────────────
+    { niveau:P, nom:'Crayon à papier HB (lot ×6)',           categorie:'Stylos & crayons',     unite:'lot',   description:'Corps hexagonal, gomme intégrée' },
+    { niveau:P, nom:'Crayons de couleur boîte ×12',          categorie:'Stylos & crayons',     unite:'boîte', description:'Minces, mine résistante' },
+    { niveau:P, nom:'Crayons de couleur boîte ×24',          categorie:'Stylos & crayons',     unite:'boîte', description:'Gamme étendue pour CM' },
+    { niveau:P, nom:'Feutres fins boîte ×12',                categorie:'Stylos & crayons',     unite:'boîte', description:'Lavables, pointe 0,4 mm' },
+    { niveau:P, nom:'Feutres larges boîte ×12',              categorie:'Stylos & crayons',     unite:'boîte', description:'Pointe ogive, corps ventilé' },
+    { niveau:P, nom:'Stylo bille bleu',                      categorie:'Stylos & crayons',     unite:'pièce', description:'CE2-CM — écriture courante' },
+    { niveau:P, nom:'Stylo plume + cartouches bleues',       categorie:'Stylos & crayons',     unite:'pièce', description:'Apprentissage écriture CE1-CM2' },
+    { niveau:S, nom:'Stylos bille bleu (lot ×5)',            categorie:'Stylos & crayons',     unite:'lot',   description:'Pointe moyenne 0,7 mm' },
+    { niveau:S, nom:'Stylo bille rouge',                     categorie:'Stylos & crayons',     unite:'pièce', description:'Corrections et annotations' },
+    { niveau:S, nom:'Stylo bille noir',                      categorie:'Stylos & crayons',     unite:'pièce', description:'Examens — obligatoire noir' },
+    { niveau:S, nom:'Stylo bille vert',                      categorie:'Stylos & crayons',     unite:'pièce', description:'Auto-correction' },
+    { niveau:S, nom:'Crayon à papier HB',                    categorie:'Stylos & crayons',     unite:'pièce', description:'Géométrie, schémas' },
+    { niveau:S, nom:'Surligneur (lot ×3 couleurs)',          categorie:'Stylos & crayons',     unite:'lot',   description:'Jaune, vert, rose — prise de notes' },
+    { niveau:S, nom:'Stylo plume + cartouches',              categorie:'Stylos & crayons',     unite:'pièce', description:'Écriture soignée — collège' },
+    { niveau:S, nom:'Stylo gel/roller noir',                 categorie:'Stylos & crayons',     unite:'pièce', description:'Lycée — rédactions et dissertations' },
+    // ── CLASSEURS & POCHETTES ───────────────────────────
+    { niveau:P, nom:'Protège-cahier plastique',              categorie:'Classeurs & pochettes', unite:'pièce', description:'17×22 cm — transparent ou coloré' },
+    { niveau:P, nom:'Chemise cartonnée à rabats',            categorie:'Classeurs & pochettes', unite:'pièce', description:'A4, couleurs assorties' },
+    { niveau:P, nom:'Pochettes plastiques perforées ×20',    categorie:'Classeurs & pochettes', unite:'lot',   description:'A4, transparentes' },
+    { niveau:S, nom:'Classeur A4 dos 4 cm',                  categorie:'Classeurs & pochettes', unite:'pièce', description:'Anneaux 20 mm — 1 par matière' },
+    { niveau:S, nom:'Classeur A4 dos 7 cm',                  categorie:'Classeurs & pochettes', unite:'pièce', description:'Anneaux 30 mm — grand volume' },
+    { niveau:S, nom:'Pochettes plastiques A4 ×50',           categorie:'Classeurs & pochettes', unite:'lot',   description:'Transparentes, perforées 11 trous' },
+    { niveau:S, nom:'Intercalaires A4 ×12 touches',          categorie:'Classeurs & pochettes', unite:'lot',   description:'Polypropylène, onglets colorés' },
+    { niveau:S, nom:'Porte-vues 40 pochettes',               categorie:'Classeurs & pochettes', unite:'pièce', description:'Présentation, travaux à rendre' },
+    { niveau:S, nom:'Porte-vues 100 pochettes',              categorie:'Classeurs & pochettes', unite:'pièce', description:'Archivage annuel' },
+    // ── CALCULATRICES ───────────────────────────────────
+    { niveau:P, nom:'Calculatrice simple 4 opérations',      categorie:'Calculatrices',         unite:'pièce', description:'Primaire CM1-CM2 — 8 chiffres' },
+    { niveau:S, nom:'Calculatrice scientifique collège',     categorie:'Calculatrices',         unite:'pièce', description:'6ème→3ème — type Casio Collège' },
+    { niveau:S, nom:'Calculatrice graphique lycée',          categorie:'Calculatrices',         unite:'pièce', description:'2nde→Terminale — type TI-83 ou Numworks' },
+    // ── RÈGLES & COMPAS ─────────────────────────────────
+    { niveau:P, nom:'Règle graduée 20 cm',                   categorie:'Règles & compas',       unite:'pièce', description:'CP-CE1 — plastique incassable' },
+    { niveau:P, nom:'Règle graduée 30 cm',                   categorie:'Règles & compas',       unite:'pièce', description:'CE2-CM — transparente graduée mm' },
+    { niveau:P, nom:'Équerre scolaire primaire',             categorie:'Règles & compas',       unite:'pièce', description:'CM1-CM2 — 20 cm' },
+    { niveau:P, nom:'Rapporteur 180°',                       categorie:'Règles & compas',       unite:'pièce', description:'CM — demi-cercle transparent' },
+    { niveau:P, nom:'Compas scolaire primaire',              categorie:'Règles & compas',       unite:'pièce', description:'CM — avec crayon, pointe réglable' },
+    { niveau:S, nom:'Règle 30 cm transparente',             categorie:'Règles & compas',       unite:'pièce', description:'Collège/lycée — graduée mm' },
+    { niveau:S, nom:'Compas de précision',                   categorie:'Règles & compas',       unite:'pièce', description:'Métal, blocage vis — tracés exacts' },
+    { niveau:S, nom:'Équerre 45° — 20 cm',                   categorie:'Règles & compas',       unite:'pièce', description:'Polystyrène transparent' },
+    { niveau:S, nom:'Équerre 60° — 20 cm',                   categorie:'Règles & compas',       unite:'pièce', description:'Polystyrène transparent' },
+    { niveau:S, nom:'Rapporteur 360°',                       categorie:'Règles & compas',       unite:'pièce', description:'Lycée — lecture degrés et grades' },
+    { niveau:S, nom:'Kit géométrie complet',                 categorie:'Règles & compas',       unite:'pièce', description:'Règle + compas + 2 équerres + rapporteur' },
+    // ── SACS & TROUSSES ─────────────────────────────────
+    { niveau:P, nom:'Cartable rigide primaire',              categorie:'Sacs & trousses',       unite:'pièce', description:'Bretelles ergonomiques — 38×30 cm' },
+    { niveau:P, nom:'Trousse souple primaire',               categorie:'Sacs & trousses',       unite:'pièce', description:'1 compartiment — avec fermeture éclair' },
+    { niveau:S, nom:'Sac à dos collège/lycée',               categorie:'Sacs & trousses',       unite:'pièce', description:'30 L, compartiments multiples' },
+    { niveau:S, nom:'Trousse triple compartiments',          categorie:'Sacs & trousses',       unite:'pièce', description:'Grande capacité — lycée' },
+    // ── LIVRES & MANUELS ────────────────────────────────
+    { niveau:P, nom:'Dictionnaire Larousse junior',          categorie:'Livres & manuels',      unite:'pièce', description:'CM1-CM2 — 20 000 mots illustrés' },
+    { niveau:S, nom:'Dictionnaire Larousse collège',         categorie:'Livres & manuels',      unite:'pièce', description:'60 000 mots — collège' },
+    { niveau:S, nom:'Bescherelle Conjugaison',               categorie:'Livres & manuels',      unite:'pièce', description:'12 000 verbes — référence AEFE' },
+    { niveau:S, nom:'Dictionnaire bilingue français',        categorie:'Livres & manuels',      unite:'pièce', description:'Français ↔ langue locale' },
+    { niveau:S, nom:'Agenda scolaire A5',                    categorie:'Livres & manuels',      unite:'pièce', description:'Semaine sur 2 pages — lycée' },
+    // ── AUTRE ───────────────────────────────────────────
+    { niveau:P, nom:'Colle en stick 21 g',                   categorie:'Autre',                 unite:'pièce', description:'Sans solvant, repositionnable' },
+    { niveau:P, nom:'Ciseaux bouts ronds',                   categorie:'Autre',                 unite:'pièce', description:'Primaire — lames inox 13 cm' },
+    { niveau:P, nom:'Gomme blanche',                         categorie:'Autre',                 unite:'pièce', description:'Sans PVC, ne tache pas' },
+    { niveau:P, nom:'Taille-crayon avec réservoir',          categorie:'Autre',                 unite:'pièce', description:'1 trou, corps plastique' },
+    { niveau:P, nom:'Peinture gouache boîte ×12',            categorie:'Autre',                 unite:'boîte', description:'Lavable, arts plastiques primaire' },
+    { niveau:P, nom:'Pinceau plat n°12',                     categorie:'Autre',                 unite:'pièce', description:'Soies synthétiques' },
+    { niveau:S, nom:'Correcteur liquide',                    categorie:'Autre',                 unite:'pièce', description:'Séchage rapide — 20 ml' },
+    { niveau:S, nom:'Agrafeuse',                             categorie:'Autre',                 unite:'pièce', description:'24/6 — capacité 20 feuilles' },
+    { niveau:S, nom:'Perforeuse 2 trous',                    categorie:'Autre',                 unite:'pièce', description:'Capacité 20 feuilles, bac de récupération' },
+    { niveau:T, nom:'Ruban adhésif transparent',             categorie:'Autre',                 unite:'pièce', description:'19 mm × 33 m' },
+    { niveau:T, nom:'Étiquettes autocollantes noms',         categorie:'Autre',                 unite:'lot',   description:'Pour cahiers, classeurs, matériel' },
+    { niveau:T, nom:'Couvre-livre transparent',              categorie:'Autre',                 unite:'pièce', description:'Rouleau repositionnable 50 cm × 1,5 m' },
+    { niveau:T, nom:'Papier A4 rame 500 feuilles',           categorie:'Autre',                 unite:'rame',  description:'80 g/m² — blanc, pour imprimante' },
+  ];
+  let idSeq = Date.now();
+  for (const a of seed) {
+    db.articles.push({ id: idSeq++, prixAchat: 0, prixVente: 0, ...a });
+  }
+  saveData();
+}
+
+// Add protège-cahier articles if not yet present
+if (!db.articles.some(a => a.categorie === 'Protèges')) {
+  const couleurs = ['Blanc','Bleu','Rouge','Vert','Jaune','Orange','Violet','Rose','Noir','Transparent'];
+  let id = Date.now();
+  for (const c of couleurs) {
+    db.articles.push({ id: id++, niveau:'Primaire',   categorie:'Protèges', nom:`Protège-cahier 17×22 ${c}`, unite:'pièce', prixAchat:0, prixVente:0, description:`Format 17×22 cm — couleur ${c}` });
+    db.articles.push({ id: id++, niveau:'Secondaire', categorie:'Protèges', nom:`Protège-cahier A4 ${c}`,    unite:'pièce', prixAchat:0, prixVente:0, description:`Format A4 — couleur ${c}` });
+    db.articles.push({ id: id++, niveau:'Tous niveaux', categorie:'Protèges', nom:`Protège-cahier A3 ${c}`,  unite:'pièce', prixAchat:0, prixVente:0, description:`Format A3 — couleur ${c}` });
+  }
+  saveData();
+}
+// Add A3 protège-cahiers if missing (migration for existing data)
+if (db.articles.some(a => a.categorie === 'Protèges') && !db.articles.some(a => a.nom && a.nom.includes('A3'))) {
+  const couleurs = ['Blanc','Bleu','Rouge','Vert','Jaune','Orange','Violet','Rose','Noir','Transparent'];
+  let id = Date.now() + 1000;
+  for (const c of couleurs) {
+    db.articles.push({ id: id++, niveau:'Tous niveaux', categorie:'Protèges', nom:`Protège-cahier A3 ${c}`, unite:'pièce', prixAchat:0, prixVente:0, description:`Format A3 — couleur ${c}` });
+  }
+  saveData();
+}
+
+// Ensure default admin exists
+if (!db.users.find(u => u.username === 'admin')) {
+  db.users.unshift({ id: 1, username: 'admin', pwHash: hashPw('admin1234'), role: 'admin', createdAt: new Date().toISOString() });
+  saveData();
+}
+
+// ─── SESSION (in-memory only) ─────────────────────────────
+let currentUser = null; // { id, username, role }
+
+// ═══════════════════════════════════════════════════════════
+//  AUTH
+// ═══════════════════════════════════════════════════════════
+function doLogin() {
+  const username = document.getElementById('login-username').value.trim();
+  const password = document.getElementById('login-password').value;
+  const err = document.getElementById('login-error');
+  if (!username || !password) { err.textContent = 'Remplissez tous les champs.'; return; }
+  const user = db.users.find(u => u.username.toLowerCase() === username.toLowerCase() && u.pwHash === hashPw(password));
+  if (!user) { err.textContent = 'Identifiant ou mot de passe incorrect.'; return; }
+  currentUser = { id: user.id, username: user.username, role: user.role };
+  err.textContent = '';
+  document.getElementById('login-overlay').style.display = 'none';
+  document.getElementById('app').style.display = '';
+  applyRoleUI();
+  refreshCategorySelects();
+  renderDashboard();
+}
+
+function doLogout() {
+  currentUser = null;
+  document.getElementById('login-overlay').style.display = 'flex';
+  document.getElementById('app').style.display = 'none';
+  document.getElementById('login-username').value = '';
+  document.getElementById('login-password').value = '';
+  document.getElementById('login-error').textContent = '';
+}
+
+function applyRoleUI() {
+  if (!currentUser) return;
+  // Header
+  const av = document.getElementById('header-avatar');
+  av.textContent = currentUser.username[0].toUpperCase();
+  av.className = 'avatar ' + currentUser.role;
+  document.getElementById('header-username').textContent = currentUser.username;
+  const rb = document.getElementById('header-role');
+  rb.textContent = currentUser.role;
+  rb.className = 'role-badge ' + currentUser.role;
+  // Nav: show/hide users tab
+  document.getElementById('nav-users').style.display = currentUser.role === 'admin' ? '' : 'none';
+  // Hide/show admin-only clear button
+  const cb = document.getElementById('btn-clear-all');
+  if (cb) cb.style.display = currentUser.role === 'admin' ? '' : 'none';
+}
+
+function isAdmin() { return currentUser && currentUser.role === 'admin'; }
+
+// ═══════════════════════════════════════════════════════════
+//  TABS
+// ═══════════════════════════════════════════════════════════
+const TABS = ['dashboard','articles','achat','vente','stock','historique','fournisseurs','users'];
+
+function switchTab(name) {
+  // Role guard: only admin can access articles and users tabs
+  if ((name === 'articles' || name === 'users') && !isAdmin()) return;
+  document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+  document.querySelectorAll('nav button').forEach(el => el.classList.remove('active'));
+  document.getElementById('tab-' + name).classList.add('active');
+  const idx = TABS.indexOf(name);
+  const btns = document.querySelectorAll('nav button');
+  if (btns[idx]) btns[idx].classList.add('active');
+  if (name === 'dashboard') renderDashboard();
+  if (name === 'articles') { refreshCategorySelects(); renderArticles(); renderCategoryChips(); }
+  if (name === 'achat') { refreshCategorySelects(); populateAchatSelect(); }
+  if (name === 'vente') populateVenteSelect();
+  if (name === 'stock') renderStock();
+  if (name === 'historique') renderHistorique();
+  if (name === 'fournisseurs') renderFournisseurs();
+  if (name === 'users') renderUsers();
+}
+
+// ═══════════════════════════════════════════════════════════
+//  UTILS
+// ═══════════════════════════════════════════════════════════
+function fmt(n) { return Number(n).toLocaleString('fr') + ' Ar'; }
+function fmtDate(d) { if (!d) return '—'; return new Date(d).toLocaleDateString('fr-FR'); }
+function fmtDateTime(d) { if (!d) return '—'; return new Date(d).toLocaleString('fr-FR',{dateStyle:'short',timeStyle:'short'}); }
+function notify(msg) {
+  const el = document.getElementById('notif');
+  el.textContent = msg; el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2800);
+}
+function computeStock() {
+  const stock = {};
+  for (const t of db.transactions) {
+    const key = t.article;
+    if (!stock[key]) stock[key] = { article:t.article, categorie:t.categorie||'—', qte:0, prixAchatMoyen:0, totalInvesti:0 };
+    if (t.type === 'achat') {
+      stock[key].totalInvesti += t.qte * t.prixUnitaire;
+      stock[key].qte += t.qte;
+      stock[key].prixAchatMoyen = stock[key].qte > 0 ? stock[key].totalInvesti / stock[key].qte : 0;
+    } else {
+      stock[key].qte -= t.qte;
+      stock[key].totalInvesti -= t.qte * (stock[key].prixAchatMoyen||0);
+      if (stock[key].qte < 0) stock[key].qte = 0;
+    }
+  }
+  return stock;
+}
+function getArticle(nom) { return db.articles.find(a => a.nom === nom) || null; }
+function allCategories() { return [...BUILTIN_CATEGORIES, ...db.customCategories]; }
+function fillCategorySelect(sel, selectedValue) {
+  const prev = selectedValue !== undefined ? selectedValue : sel.value;
+  sel.innerHTML = '';
+  for (const cat of allCategories()) {
+    const opt = document.createElement('option');
+    opt.value = cat; opt.textContent = cat; sel.appendChild(opt);
+  }
+  if (prev && [...sel.options].some(o => o.value === prev)) sel.value = prev;
+}
+function refreshCategorySelects() {
+  fillCategorySelect(document.getElementById('art-categorie'));
+  fillCategorySelect(document.getElementById('a-categorie'));
+  const fc = document.getElementById('art-filter-cat');
+  const prevCat = fc.value;
+  fc.innerHTML = '<option value="">Toutes catégories</option>';
+  for (const cat of allCategories()) {
+    const opt = document.createElement('option');
+    opt.value = cat; opt.textContent = cat; fc.appendChild(opt);
+  }
+  if (prevCat) fc.value = prevCat;
+}
+
+// ═══════════════════════════════════════════════════════════
+//  USERS
+// ═══════════════════════════════════════════════════════════
+function createUser() {
+  if (!isAdmin()) { notify('⛔ Accès refusé'); return; }
+  const username = document.getElementById('nu-username').value.trim();
+  const pw = document.getElementById('nu-password').value;
+  const confirm = document.getElementById('nu-confirm').value;
+  const role = document.getElementById('nu-role').value;
+  if (!username) { notify('⚠️ Nom d\'utilisateur obligatoire'); return; }
+  if (pw.length < 4) { notify('⚠️ Mot de passe trop court (min. 4 caractères)'); return; }
+  if (pw !== confirm) { notify('⚠️ Les mots de passe ne correspondent pas'); return; }
+  if (db.users.find(u => u.username.toLowerCase() === username.toLowerCase())) { notify('⚠️ Ce nom d\'utilisateur existe déjà'); return; }
+  db.users.push({ id: Date.now(), username, pwHash: hashPw(pw), role, createdAt: new Date().toISOString() });
+  saveData();
+  document.getElementById('nu-username').value = '';
+  document.getElementById('nu-password').value = '';
+  document.getElementById('nu-confirm').value = '';
+  notify('✅ Utilisateur créé : ' + username);
+  renderUsers();
+}
+
+function deleteUser(id) {
+  if (!isAdmin()) return;
+  const u = db.users.find(x => x.id == id);
+  if (!u) return;
+  if (u.username === currentUser.username) { notify('⚠️ Impossible de supprimer votre propre compte'); return; }
+  if (!confirm(`Supprimer l'utilisateur "${u.username}" ?`)) return;
+  db.users = db.users.filter(x => x.id != id);
+  saveData(); renderUsers();
+  notify('🗑 Utilisateur supprimé : ' + u.username);
+}
+
+function togglePwForm(id) {
+  const el = document.getElementById('pw-form-' + id);
+  if (el) el.classList.toggle('open');
+}
+
+function changePw(id) {
+  const np = document.getElementById('pw-new-' + id).value;
+  const cp = document.getElementById('pw-confirm-' + id).value;
+  if (np.length < 4) { notify('⚠️ Mot de passe trop court'); return; }
+  if (np !== cp) { notify('⚠️ Les mots de passe ne correspondent pas'); return; }
+  const idx = db.users.findIndex(u => u.id == id);
+  if (idx === -1) return;
+  db.users[idx].pwHash = hashPw(np);
+  saveData();
+  togglePwForm(id);
+  notify('✅ Mot de passe modifié');
+}
+
+function countTx(username) { return db.transactions.filter(t => t.user === username).length; }
+
+function renderUsers() {
+  const wrap = document.getElementById('users-list');
+  if (!db.users.length) { wrap.innerHTML = '<div class="empty"><div class="icon">👥</div>Aucun utilisateur.</div>'; return; }
+  wrap.innerHTML = db.users.map(u => {
+    const txCount = countTx(u.username);
+    const isSelf = u.username === currentUser.username;
+    return `
+    <div class="user-card">
+      <div class="ua ${u.role}">${u.username[0].toUpperCase()}</div>
+      <div class="info">
+        <strong>${u.username}</strong>
+        <span class="role-badge ${u.role}">${u.role}</span>
+        ${isSelf ? '<span style="font-size:11px;color:#4f46e5;margin-left:6px;">← vous</span>' : ''}
+        <br><span style="font-size:11px;color:#94a3b8;margin-top:2px;display:block;">
+          Créé le ${fmtDate(u.createdAt)} · ${txCount} transaction${txCount>1?'s':''}
+        </span>
+      </div>
+      <div class="actions">
+        <button class="btn btn-edit btn-sm" onclick="togglePwForm(${u.id})">🔑 Mot de passe</button>
+        ${!isSelf ? `<button class="btn btn-danger" onclick="deleteUser(${u.id})">✕</button>` : ''}
+      </div>
+    </div>
+    <div class="pw-change" id="pw-form-${u.id}">
+      <div class="form-grid" style="max-width:500px;">
+        <div class="form-group"><label>Nouveau mot de passe</label><input type="password" id="pw-new-${u.id}" placeholder="Min. 4 caractères"></div>
+        <div class="form-group"><label>Confirmer</label><input type="password" id="pw-confirm-${u.id}" placeholder="Répéter"></div>
+      </div>
+      <div class="form-actions" style="margin-top:10px;">
+        <button class="btn btn-primary btn-sm" onclick="changePw(${u.id})">Enregistrer</button>
+        <button class="btn btn-secondary btn-sm" onclick="togglePwForm(${u.id})">Annuler</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  CATEGORIES
+// ═══════════════════════════════════════════════════════════
+function renderCategoryChips() {
+  const bw = document.getElementById('cat-builtin-chips');
+  bw.innerHTML = '';
+  for (const cat of BUILTIN_CATEGORIES) {
+    const chip = document.createElement('span');
+    chip.className = 'cat-chip builtin'; chip.textContent = cat;
+    bw.appendChild(chip);
+  }
+  const cw = document.getElementById('cat-custom-chips');
+  const em = document.getElementById('cat-empty-msg');
+  cw.innerHTML = '';
+  if (db.customCategories.length === 0) { em.style.display=''; cw.appendChild(em); }
+  else {
+    em.style.display = 'none';
+    for (const cat of db.customCategories) {
+      const chip = document.createElement('span');
+      chip.className = 'cat-chip custom';
+      chip.innerHTML = `${cat} <button class="del-btn" onclick="deleteCategory('${cat.replace(/'/g,"\\'")}')">×</button>`;
+      cw.appendChild(chip);
+    }
+    cw.appendChild(em);
+  }
+}
+function addCategory() {
+  const input = document.getElementById('cat-new-input');
+  const name = input.value.trim();
+  if (!name) { notify('⚠️ Entrez un nom'); return; }
+  if (allCategories().map(c=>c.toLowerCase()).includes(name.toLowerCase())) { notify('⚠️ Catégorie existante'); return; }
+  db.customCategories.push(name);
+  saveData(); input.value = '';
+  renderCategoryChips(); refreshCategorySelects();
+  notify('✅ Catégorie ajoutée : ' + name);
+}
+function deleteCategory(name) {
+  const ua = db.articles.some(a=>a.categorie===name), ut = db.transactions.some(t=>t.categorie===name);
+  if ((ua||ut) && !confirm(`"${name}" est utilisée. Supprimer quand même ?`)) return;
+  db.customCategories = db.customCategories.filter(c=>c!==name);
+  saveData(); renderCategoryChips(); refreshCategorySelects();
+  notify('🗑 Catégorie supprimée');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  BASE ARTICLES
+// ═══════════════════════════════════════════════════════════
+// ─── PHOTO ───────────────────────────────────────────────
+// pendingPhoto states:
+//   undefined = form just reset, no photo touched
+//   null      = user explicitly removed the photo (show upload zone)
+//   string    = new base64 image selected
+let pendingPhoto = undefined;
+
+function resizeImage(file, maxPx, quality, callback) {
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > maxPx || h > maxPx) {
+        if (w > h) { h = Math.round(h * maxPx / w); w = maxPx; }
+        else { w = Math.round(w * maxPx / h); h = maxPx; }
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+      callback(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.src = e.target.result;
+  };
+  reader.readAsDataURL(file);
+}
+
+function onPhotoSelected(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  resizeImage(file, 400, 0.75, dataUrl => {
+    pendingPhoto = dataUrl;
+    showPhotoPreview(dataUrl);
+  });
+}
+
+function showPhotoPreview(dataUrl) {
+  const container = document.getElementById('art-photo-container');
+  container.innerHTML = `
+    <div class="photo-preview-wrap">
+      <img src="${dataUrl}" class="photo-preview" alt="Aperçu">
+      <div class="photo-preview-overlay">
+        <span>Modifier la photo</span>
+        <div class="photo-preview-overlay-btns">
+          <label class="photo-overlay-btn" title="Prendre une photo">
+            📷 Caméra
+            <input type="file" accept="image/*" capture="environment" onchange="onPhotoSelected(event)">
+          </label>
+          <label class="photo-overlay-btn" title="Choisir dans la galerie">
+            🖼️ Galerie
+            <input type="file" accept="image/*" onchange="onPhotoSelected(event)">
+          </label>
+        </div>
+      </div>
+      <button class="photo-remove" onclick="removePhoto()" title="Supprimer la photo">×</button>
+    </div>`;
+}
+
+function removePhoto() {
+  pendingPhoto = undefined;
+  const container = document.getElementById('art-photo-container');
+  container.innerHTML = `
+    <div class="photo-upload-area" id="art-photo-dropzone">
+      <div class="icon">📷</div>
+      <p>Ajouter une photo de l'article</p>
+      <div class="photo-source-btns">
+        <label class="photo-source-btn">
+          📷 Caméra
+          <input type="file" accept="image/*" capture="environment" onchange="onPhotoSelected(event)">
+        </label>
+        <label class="photo-source-btn gallery">
+          🖼️ Galerie
+          <input type="file" accept="image/*" onchange="onPhotoSelected(event)">
+        </label>
+      </div>
+    </div>`;
+}
+
+function updateArtMarge() {
+  const pa = parseFloat(document.getElementById('art-prix-achat').value)||0;
+  const pv = parseFloat(document.getElementById('art-prix-vente').value)||0;
+  const inp = document.getElementById('art-marge-preview');
+  if (pa && pv) { const m=pv-pa; inp.value=fmt(m)+' ('+((m/pa)*100).toFixed(1)+'%)'; inp.style.color=m>=0?'#16a34a':'#dc2626'; }
+  else { inp.value=''; inp.style.color=''; }
+}
+function saveArticle() {
+  if (!isAdmin()) { notify('⛔ Accès réservé aux admins'); return; }
+  const nom = document.getElementById('art-nom').value.trim();
+  if (!nom) { notify('⚠️ Nom obligatoire'); return; }
+  const editId = document.getElementById('art-edit-id').value;
+  const data = { nom, niveau:document.getElementById('art-niveau').value||'Tous niveaux', categorie:document.getElementById('art-categorie').value, unite:document.getElementById('art-unite').value,
+    prixAchat:parseFloat(document.getElementById('art-prix-achat').value)||0,
+    prixVente:parseFloat(document.getElementById('art-prix-vente').value)||0,
+    description:document.getElementById('art-description').value.trim(),
+    photo: typeof pendingPhoto === 'string' ? pendingPhoto : null };
+  if (editId) {
+    const idx = db.articles.findIndex(a=>a.id==editId);
+    if (idx!==-1) {
+      // Keep existing photo if no new one was set and user didn't explicitly remove it
+      if (typeof pendingPhoto !== 'string' && db.articles[idx].photo) data.photo = db.articles[idx].photo;
+      db.articles[idx]={...db.articles[idx],...data};
+    }
+    notify('✅ Article mis à jour : '+nom);
+  } else {
+    if (db.articles.find(a=>a.nom.toLowerCase()===nom.toLowerCase())) { notify('⚠️ Article existant'); return; }
+    data.id = Date.now(); db.articles.push(data);
+    notify('✅ Article ajouté : '+nom);
+  }
+  saveData(); resetArtForm(); renderArticles();
+}
+function editArticle(id) {
+  const a = db.articles.find(x=>x.id==id); if (!a) return;
+  document.getElementById('art-edit-id').value = id;
+  document.getElementById('art-nom').value = a.nom;
+  document.getElementById('art-niveau').value = a.niveau||'Tous niveaux';
+  fillCategorySelect(document.getElementById('art-categorie'), a.categorie);
+  document.getElementById('art-unite').value = a.unite||'pièce';
+  document.getElementById('art-prix-achat').value = a.prixAchat||'';
+  document.getElementById('art-prix-vente').value = a.prixVente||'';
+  document.getElementById('art-description').value = a.description||'';
+  document.getElementById('art-form-title').textContent = '✏️ Modifier l\'article';
+  // Photo: show existing if present, otherwise reset upload zone
+  pendingPhoto = undefined;
+  if (a.photo) { showPhotoPreview(a.photo); }
+  else { removePhoto(); }
+  updateArtMarge(); window.scrollTo({top:0,behavior:'smooth'});
+}
+function deleteArticle(id) {
+  const a = db.articles.find(x=>x.id==id);
+  if (!a||!confirm(`Supprimer "${a.nom}" ?`)) return;
+  db.articles = db.articles.filter(x=>x.id!=id);
+  saveData(); renderArticles(); notify('🗑 Article supprimé');
+}
+function resetArtForm() {
+  ['art-edit-id','art-nom','art-prix-achat','art-prix-vente','art-description'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('art-niveau').value='Tous niveaux';
+  document.getElementById('art-marge-preview').value=''; document.getElementById('art-marge-preview').style.color='';
+  document.getElementById('art-form-title').textContent='➕ Ajouter un article au catalogue';
+  pendingPhoto = null;
+  removePhoto();
+}
+function niveauBadge(n) {
+  if (n==='Primaire')   return `<span class="badge-primaire">🏫 Primaire</span>`;
+  if (n==='Secondaire') return `<span class="badge-secondaire">🎓 Secondaire</span>`;
+  return `<span class="badge-tous">📚 Tous</span>`;
+}
+function renderArticles() {
+  const search=(document.getElementById('art-search').value||'').toLowerCase();
+  const cat=document.getElementById('art-filter-cat').value;
+  const niv=document.getElementById('art-filter-niveau').value;
+  const list=db.articles.filter(a=>{
+    if(niv&&a.niveau!==niv&&!(niv==='Primaire'&&!a.niveau)&&!(niv==='Secondaire'&&!a.niveau)) return false;
+    if(cat&&a.categorie!==cat) return false;
+    if(search&&!a.nom.toLowerCase().includes(search)&&!(a.description||'').toLowerCase().includes(search)) return false;
+    return true;
+  });
+  document.getElementById('art-count').textContent=db.articles.length;
+  const wrap=document.getElementById('articles-table-wrap');
+  if (!list.length) { wrap.innerHTML=db.articles.length?'<div class="empty"><div class="icon">🔍</div>Aucun résultat.</div>':'<div class="empty"><div class="icon">📚</div>Aucun article. Commencez par en ajouter un !</div>'; return; }
+  let html=`<table><thead><tr><th>Photo</th><th>Article</th><th>Niveau</th><th>Catégorie</th><th>Unité</th><th>Prix achat</th><th>Prix vente</th><th>Marge</th><th></th></tr></thead><tbody>`;
+  for (const a of list) {
+    const marge=a.prixAchat&&a.prixVente?a.prixVente-a.prixAchat:null;
+    const pct=a.prixAchat&&marge!=null?((marge/a.prixAchat)*100).toFixed(0)+'%':'';
+    const mb=marge!=null?`<span class="marge-pill ${marge>=0?'marge-pos':'marge-neg'}">${marge>=0?'+':''}${fmt(marge)} (${pct})</span>`:'—';
+    const photoCell=a.photo?`<img src="${a.photo}" class="photo-thumb" alt="${a.nom}">`:`<div class="no-photo">📷</div>`;
+    html+=`<tr><td>${photoCell}</td><td><strong>${a.nom}</strong>${a.description?`<div style="font-size:11px;color:#94a3b8;margin-top:2px">${a.description}</div>`:''}</td><td>${niveauBadge(a.niveau)}</td><td><span class="badge badge-cat">${a.categorie}</span></td><td style="color:#64748b">${a.unite||'pièce'}</td><td>${a.prixAchat?fmt(a.prixAchat):'—'}</td><td>${a.prixVente?fmt(a.prixVente):'—'}</td><td>${mb}</td><td style="white-space:nowrap"><button class="btn btn-edit" onclick="editArticle(${a.id})">✏️</button> <button class="btn btn-danger" onclick="deleteArticle(${a.id})">✕</button></td></tr>`;
+    // Fournisseurs sub-row — always shown
+    const tarifs = (db.tarifs||[]).filter(t => t.articleNom === a.nom);
+    const tarifsDispos = tarifs.filter(t => !t.rupture);
+    const bestPrix = tarifsDispos.length ? Math.min(...tarifsDispos.map(t => t.prixUnitaire)) : null;
+    let subHtml = `<tr><td colspan="9" style="padding:0 16px 12px 40px;background:#f8fafc;border-bottom:2px solid #e2e8f0;">
+      <div style="font-size:11px;font-weight:600;text-transform:uppercase;color:#64748b;letter-spacing:.05em;margin:6px 0;">🏪 Fournisseurs</div>`;
+    if (!tarifs.length) {
+      subHtml += `<span style="font-size:12px;color:#94a3b8;font-style:italic;">Aucun tarif enregistré — allez dans l'onglet Fournisseurs pour en ajouter.</span>`;
+    } else {
+      subHtml += `<table class="fourn-sub-table" style="border-collapse:collapse;width:auto;min-width:420px;">
+        <thead><tr style="background:#eef2ff;">
+          <th style="padding:5px 12px;font-size:11px;font-weight:600;color:#4338ca;border:1px solid #c7d2fe;text-align:left;">Fournisseur</th>
+          <th style="padding:5px 12px;font-size:11px;font-weight:600;color:#4338ca;border:1px solid #c7d2fe;text-align:right;">Prix d'achat</th>
+          <th style="padding:5px 12px;font-size:11px;font-weight:600;color:#4338ca;border:1px solid #c7d2fe;text-align:center;">Délai (j)</th>
+          <th style="padding:5px 12px;font-size:11px;font-weight:600;color:#4338ca;border:1px solid #c7d2fe;text-align:center;">Qté min</th>
+          <th style="padding:5px 12px;font-size:11px;font-weight:600;color:#4338ca;border:1px solid #c7d2fe;text-align:left;">Notes</th>
+        </tr></thead><tbody>`;
+      for (const t of tarifs) {
+        const f = (db.fournisseurs||[]).find(x => String(x.id) === String(t.fournisseurId));
+        const isBest = !t.rupture && t.prixUnitaire === bestPrix;
+        const rowBg = t.rupture ? 'background:#fff5f5;' : isBest ? 'background:#f0fdf4;' : 'background:#fff;';
+        const ruptureCell = t.rupture ? `<span class="badge-rupture">Rupture</span>` : '';
+        subHtml += `<tr style="${rowBg}${t.rupture?'opacity:.6;':''}">
+          <td style="padding:5px 12px;font-size:12px;border:1px solid #e2e8f0;">${isBest?'🏆 ':t.rupture?'🔴 ':''}<strong>${f?f.nom:'ID:'+t.fournisseurId}</strong> ${ruptureCell}</td>
+          <td style="padding:5px 12px;font-size:12px;border:1px solid #e2e8f0;text-align:right;${isBest?'font-weight:700;color:#16a34a;':t.rupture?'color:#94a3b8;text-decoration:line-through;':''}">${fmt(t.prixUnitaire)}</td>
+          <td style="padding:5px 12px;font-size:12px;border:1px solid #e2e8f0;text-align:center;color:#64748b;">${t.delaiJours??'—'}</td>
+          <td style="padding:5px 12px;font-size:12px;border:1px solid #e2e8f0;text-align:center;color:#64748b;">${t.qteMin??'—'}</td>
+          <td style="padding:5px 12px;font-size:12px;border:1px solid #e2e8f0;color:#94a3b8;font-style:italic;">${t.notes||'—'}</td>
+        </tr>`;
+      }
+      subHtml += `</tbody></table>`;
+    }
+    subHtml += `</td></tr>`;
+    html += subHtml;
+  }
+  wrap.innerHTML=html+'</tbody></table>';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  ACHAT
+// ═══════════════════════════════════════════════════════════
+document.getElementById('a-date').valueAsDate = new Date();
+function populateAchatSelect() {
+  // Populate fournisseur dropdown
+  const fsel = document.getElementById('a-fournisseur'), fcur = fsel.value;
+  fsel.innerHTML = '<option value="">— Aucun / non renseigné —</option>';
+  for (const f of db.fournisseurs) {
+    const opt = document.createElement('option');
+    opt.value = f.nom; opt.textContent = f.nom;
+    fsel.appendChild(opt);
+  }
+  if (fcur) fsel.value = fcur;
+
+  // Populate article dropdown
+  const sel=document.getElementById('a-article'), cur=sel.value;
+  sel.innerHTML='<option value="">-- Choisir dans le catalogue --</option>';
+  for (const a of db.articles) {
+    const opt=document.createElement('option');
+    opt.value=a.nom; opt.dataset.categorie=a.categorie; opt.dataset.prixAchat=a.prixAchat||'';
+    opt.textContent=a.nom+(a.prixAchat?' ('+a.prixAchat.toLocaleString('fr')+' Ar)':'');
+    sel.appendChild(opt);
+  }
+  const c=document.createElement('option'); c.value='__custom__'; c.textContent='✏️ Article hors catalogue';
+  sel.appendChild(c); if(cur) sel.value=cur;
+}
+function onAchatArticleChange() {
+  const sel=document.getElementById('a-article'), val=sel.value, cg=document.getElementById('a-custom-group');
+  if (val==='__custom__') { cg.style.display='flex'; document.getElementById('a-article-custom').value=''; document.getElementById('a-prix').value=''; return; }
+  cg.style.display='none';
+  if (!val) { document.getElementById('a-prix').value=''; return; }
+  const opt=sel.selectedOptions[0];
+  if (opt.dataset.categorie) document.getElementById('a-categorie').value=opt.dataset.categorie;
+  // Try to prefill price from supplier tarif if a supplier is selected
+  const fournNom = document.getElementById('a-fournisseur').value;
+  if (fournNom) {
+    const fourn = db.fournisseurs.find(f => f.nom === fournNom);
+    if (fourn) {
+      const tarif = db.tarifs.find(t => t.fournisseurId == fourn.id && t.articleNom === val);
+      if (tarif) { document.getElementById('a-prix').value = tarif.prixUnitaire; updateAchatTotal(); return; }
+    }
+  }
+  if (opt.dataset.prixAchat) { document.getElementById('a-prix').value=opt.dataset.prixAchat; updateAchatTotal(); }
+}
+function updateAchatTotal() {
+  const q=parseFloat(document.getElementById('a-qte').value)||0, p=parseFloat(document.getElementById('a-prix').value)||0;
+  document.getElementById('a-total').textContent=q&&p?'Total : '+fmt(q*p):'';
+}
+function addAchat() {
+  let article=document.getElementById('a-article').value;
+  if (article==='__custom__') article=document.getElementById('a-article-custom').value.trim();
+  const qte=parseInt(document.getElementById('a-qte').value), prix=parseFloat(document.getElementById('a-prix').value), date=document.getElementById('a-date').value;
+  if (!article||!qte||!prix||!date) { notify('⚠️ Remplissez les champs obligatoires'); return; }
+  db.transactions.unshift({ id:Date.now(), type:'achat', article,
+    categorie:document.getElementById('a-categorie').value, qte, prixUnitaire:prix, total:qte*prix,
+    fournisseur:document.getElementById('a-fournisseur').value.trim()||'—', acheteur:'—', date,
+    notes:document.getElementById('a-notes').value.trim(),
+    user: currentUser ? currentUser.username : '—',
+    createdAt: new Date().toISOString()
+  });
+  saveData(); notify('✅ Achat enregistré : '+article); resetAchat();
+}
+function resetAchat() {
+  document.getElementById('a-article').value=''; document.getElementById('a-article-custom').value='';
+  document.getElementById('a-custom-group').style.display='none';
+  ['a-qte','a-prix','a-fournisseur','a-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('a-date').valueAsDate=new Date(); document.getElementById('a-total').textContent='';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  VENTE
+// ═══════════════════════════════════════════════════════════
+document.getElementById('v-date').valueAsDate = new Date();
+function populateVenteSelect() {
+  const stock=computeStock(), sel=document.getElementById('v-article');
+  sel.innerHTML='<option value="">-- Choisir un article --</option>';
+  for (const [k,v] of Object.entries(stock)) {
+    if (v.qte>0) {
+      const art=getArticle(k), opt=document.createElement('option');
+      opt.value=k; opt.dataset.qte=v.qte; opt.dataset.prixAchat=v.prixAchatMoyen.toFixed(0);
+      opt.dataset.prixVente=art&&art.prixVente?art.prixVente:'';
+      opt.textContent=k+' (stock: '+v.qte+')'; sel.appendChild(opt);
+    }
+  }
+}
+function updateVenteStock() {
+  const opt=document.getElementById('v-article').selectedOptions[0];
+  document.getElementById('v-stock-dispo').value=opt&&opt.dataset.qte?opt.dataset.qte+' unités':'';
+  if (opt&&opt.dataset.prixVente) document.getElementById('v-prix').value=opt.dataset.prixVente;
+  updateVenteMarge();
+}
+function updateVenteMarge() {
+  const opt=document.getElementById('v-article').selectedOptions[0];
+  const pa=opt?parseFloat(opt.dataset.prixAchat||0):0;
+  const pv=parseFloat(document.getElementById('v-prix').value)||0, qte=parseInt(document.getElementById('v-qte').value)||0;
+  const el=document.getElementById('v-marge');
+  if (pv&&qte) { const m=(pv-pa)*qte; el.textContent='Bénéfice estimé : '+fmt(m); el.className=m>=0?'profit-pos':'profit-neg'; el.style.marginLeft='auto'; }
+  else el.textContent='';
+}
+function addVente() {
+  const article=document.getElementById('v-article').value;
+  const qte=parseInt(document.getElementById('v-qte').value), prix=parseFloat(document.getElementById('v-prix').value), date=document.getElementById('v-date').value;
+  if (!article||!qte||!prix||!date) { notify('⚠️ Remplissez les champs obligatoires'); return; }
+  const stock=computeStock();
+  if (!stock[article]||stock[article].qte<qte) { notify('⚠️ Stock insuffisant pour '+article); return; }
+  const pa=stock[article].prixAchatMoyen;
+  db.transactions.unshift({ id:Date.now(), type:'vente', article, categorie:stock[article].categorie,
+    qte, prixUnitaire:prix, prixAchatUnitaire:pa, total:qte*prix, benefice:(prix-pa)*qte,
+    fournisseur:'—', acheteur:document.getElementById('v-acheteur').value.trim()||'—', date,
+    notes:document.getElementById('v-notes').value.trim(),
+    user: currentUser ? currentUser.username : '—',
+    createdAt: new Date().toISOString()
+  });
+  saveData(); notify('✅ Vente enregistrée : '+article); resetVente();
+}
+function resetVente() {
+  ['v-article','v-qte','v-prix','v-acheteur','v-notes'].forEach(id=>document.getElementById(id).value='');
+  document.getElementById('v-date').valueAsDate=new Date(); document.getElementById('v-stock-dispo').value=''; document.getElementById('v-marge').textContent='';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  STOCK
+// ═══════════════════════════════════════════════════════════
+function renderStock() {
+  const stock=computeStock(), entries=Object.values(stock), wrap=document.getElementById('stock-table-wrap');
+  if (!entries.length) { wrap.innerHTML='<div class="empty"><div class="icon">📦</div>Aucun article en stock.</div>'; return; }
+  let html=`<table><thead><tr><th>Article</th><th>Catégorie</th><th>Qté dispo</th><th>Prix achat moy.</th><th>Prix vente défaut</th><th>Valeur stock</th><th>Statut</th></tr></thead><tbody>`;
+  for (const s of entries.filter(e=>e.qte>=0)) {
+    const art=getArticle(s.article), pv=art&&art.prixVente?fmt(art.prixVente):'—', val=s.qte*s.prixAchatMoyen;
+    const statut=s.qte===0?'<span class="badge badge-low">Épuisé</span>':s.qte<=3?'<span class="badge badge-low">Stock faible</span>':'<span class="badge badge-ok">Disponible</span>';
+    html+=`<tr><td><strong>${s.article}</strong></td><td>${s.categorie}</td><td><strong>${s.qte}</strong></td><td>${fmt(s.prixAchatMoyen.toFixed(0))}</td><td>${pv}</td><td>${fmt(val.toFixed(0))}</td><td>${statut}</td></tr>`;
+  }
+  wrap.innerHTML=html+'</tbody></table>';
+}
+
+// ═══════════════════════════════════════════════════════════
+//  HISTORIQUE
+// ═══════════════════════════════════════════════════════════
+function renderHistorique() {
+  const ft=document.getElementById('filter-type').value, fs=document.getElementById('filter-search').value.toLowerCase();
+  const txs=db.transactions.filter(t=>{
+    if(ft&&t.type!==ft) return false;
+    if(fs&&!t.article.toLowerCase().includes(fs)&&!(t.fournisseur||'').toLowerCase().includes(fs)&&!(t.acheteur||'').toLowerCase().includes(fs)&&!(t.user||'').toLowerCase().includes(fs)) return false;
+    return true;
+  });
+  const wrap=document.getElementById('historique-table-wrap');
+  if (!txs.length) { wrap.innerHTML='<div class="empty"><div class="icon">📋</div>Aucune transaction trouvée.</div>'; return; }
+  let html=`<table><thead><tr><th>Date</th><th>Type</th><th>Article</th><th>Qté</th><th>Prix unit.</th><th>Total</th><th>Bénéfice</th><th>Contact</th><th>Par</th><th></th></tr></thead><tbody>`;
+  for (const t of txs) {
+    const badge=t.type==='achat'?'<span class="badge badge-buy">Achat</span>':'<span class="badge badge-sell">Vente</span>';
+    const ben=t.type==='vente'&&t.benefice!=null?`<span class="${t.benefice>=0?'profit-pos':'profit-neg'}">${fmt(t.benefice.toFixed(0))}</span>`:'—';
+    const userBadge=t.user&&t.user!=='—'?`<span style="background:#f1f5f9;border-radius:99px;padding:2px 8px;font-size:11px;color:#374151">${t.user}</span>`:'—';
+    const canDelete=isAdmin();
+    html+=`<tr><td>${fmtDate(t.date)}</td><td>${badge}</td><td><strong>${t.article}</strong></td><td>${t.qte}</td><td>${fmt(t.prixUnitaire)}</td><td>${fmt(t.total)}</td><td>${ben}</td><td style="color:#64748b;font-size:12px">${t.type==='achat'?t.fournisseur:t.acheteur}</td><td>${userBadge}</td><td>${canDelete?`<button class="btn btn-danger" onclick="deleteTransaction(${t.id})">✕</button>`:''}</td></tr>`;
+  }
+  wrap.innerHTML=html+'</tbody></table>';
+}
+function deleteTransaction(id) {
+  if (!isAdmin()) { notify('⛔ Seul un admin peut supprimer'); return; }
+  if (!confirm('Supprimer cette transaction ?')) return;
+  db.transactions=db.transactions.filter(t=>t.id!==id);
+  saveData(); renderHistorique(); notify('🗑 Transaction supprimée');
+}
+function clearAll() {
+  if (!isAdmin()) { notify('⛔ Seul un admin peut tout effacer'); return; }
+  if (!confirm('Effacer TOUTES les transactions ? (Le catalogue reste intact)')) return;
+  db.transactions=[]; saveData(); renderHistorique(); notify('🗑 Transactions effacées');
+}
+
+// ═══════════════════════════════════════════════════════════
+//  DASHBOARD
+// ═══════════════════════════════════════════════════════════
+// ═══════════════════════════════════════════════════════════
+//  FOURNISSEURS
+// ═══════════════════════════════════════════════════════════
+let selectedFournisseurId = null;
+
+function saveFournisseur() {
+  const nom = document.getElementById('fourn-nom').value.trim();
+  if (!nom) { notify('⚠️ Le nom est obligatoire'); return; }
+  const editId = document.getElementById('fourn-edit-id').value;
+  const data = {
+    nom,
+    telephone: document.getElementById('fourn-tel').value.trim(),
+    email: document.getElementById('fourn-email').value.trim(),
+    adresse: document.getElementById('fourn-adresse').value.trim(),
+    notes: document.getElementById('fourn-notes').value.trim()
+  };
+  if (editId) {
+    const idx = db.fournisseurs.findIndex(f => f.id == editId);
+    if (idx !== -1) db.fournisseurs[idx] = { ...db.fournisseurs[idx], ...data };
+    notify('✅ Fournisseur mis à jour : ' + nom);
+  } else {
+    if (db.fournisseurs.find(f => f.nom.toLowerCase() === nom.toLowerCase())) { notify('⚠️ Ce fournisseur existe déjà'); return; }
+    data.id = Date.now();
+    db.fournisseurs.push(data);
+    notify('✅ Fournisseur ajouté : ' + nom);
+  }
+  saveData(); resetFournForm(); renderFournisseurs();
+}
+
+function editFournisseur(id) {
+  const f = db.fournisseurs.find(x => x.id == id); if (!f) return;
+  document.getElementById('fourn-edit-id').value = id;
+  document.getElementById('fourn-nom').value = f.nom;
+  document.getElementById('fourn-tel').value = f.telephone || '';
+  document.getElementById('fourn-email').value = f.email || '';
+  document.getElementById('fourn-adresse').value = f.adresse || '';
+  document.getElementById('fourn-notes').value = f.notes || '';
+  document.getElementById('fourn-form-title').textContent = '✏️ Modifier le fournisseur';
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+}
+
+function deleteFournisseur(id) {
+  const f = db.fournisseurs.find(x => x.id == id); if (!f) return;
+  if (!confirm(`Supprimer "${f.nom}" et tous ses tarifs ?`)) return;
+  db.fournisseurs = db.fournisseurs.filter(x => x.id != id);
+  db.tarifs = db.tarifs.filter(t => t.fournisseurId != id);
+  if (selectedFournisseurId == id) { selectedFournisseurId = null; document.getElementById('tarif-section').style.display = 'none'; }
+  saveData(); renderFournisseurs(); renderPriceComparison(); renderBonCommandeForm();
+  notify('🗑 Fournisseur supprimé');
+}
+
+function resetFournForm() {
+  document.getElementById('fourn-edit-id').value = '';
+  ['fourn-nom','fourn-tel','fourn-email','fourn-adresse','fourn-notes'].forEach(id => document.getElementById(id).value = '');
+  document.getElementById('fourn-form-title').textContent = '➕ Ajouter un fournisseur';
+}
+
+function selectFournisseur(id) {
+  selectedFournisseurId = id;
+  // Highlight selected card
+  document.querySelectorAll('.fourn-card').forEach(c => c.classList.remove('selected'));
+  const card = document.getElementById('fourn-card-' + id);
+  if (card) card.classList.add('selected');
+  // Show tarifs section
+  const f = db.fournisseurs.find(x => x.id == id);
+  if (!f) return;
+  const section = document.getElementById('tarif-section');
+  section.style.display = '';
+  document.getElementById('tarif-fourn-header').innerHTML = `
+    <div style="display:flex;align-items:center;gap:10px;">
+      <div class="fourn-avatar" style="width:36px;height:36px;font-size:14px;">🏪</div>
+      <div>
+        <strong style="font-size:15px;">${f.nom}</strong>
+        <div style="font-size:12px;color:#64748b;">${[f.telephone,f.email,f.adresse].filter(Boolean).join(' · ')}</div>
+      </div>
+    </div>`;
+  // Populate article select for tarif form
+  const sel = document.getElementById('tarif-article');
+  sel.innerHTML = '';
+  for (const a of db.articles) {
+    const opt = document.createElement('option');
+    opt.value = a.nom; opt.textContent = a.nom;
+    sel.appendChild(opt);
+  }
+  renderTarifs();
+  section.scrollIntoView({ behavior: 'smooth' });
+}
+
+function saveTarif() {
+  if (!selectedFournisseurId) { notify('⚠️ Sélectionnez un fournisseur'); return; }
+  const articleNom = document.getElementById('tarif-article').value;
+  const prix = parseFloat(document.getElementById('tarif-prix').value);
+  if (!articleNom || !prix) { notify('⚠️ Article et prix obligatoires'); return; }
+  // Update if exists, else create
+  const existing = db.tarifs.find(t => String(t.fournisseurId) === String(selectedFournisseurId) && t.articleNom === articleNom);
+  if (existing) {
+    existing.prixUnitaire = prix;
+    existing.delaiJours = parseInt(document.getElementById('tarif-delai').value) || null;
+    existing.qteMin = parseInt(document.getElementById('tarif-qtemin').value) || null;
+    existing.notes = document.getElementById('tarif-notes').value.trim();
+  } else {
+    db.tarifs.push({
+      id: Date.now(), fournisseurId: selectedFournisseurId, articleNom,
+      prixUnitaire: prix,
+      delaiJours: parseInt(document.getElementById('tarif-delai').value) || null,
+      qteMin: parseInt(document.getElementById('tarif-qtemin').value) || null,
+      notes: document.getElementById('tarif-notes').value.trim()
+    });
+  }
+  saveData();
+  ['tarif-prix','tarif-delai','tarif-qtemin','tarif-notes'].forEach(id => document.getElementById(id).value = '');
+  renderTarifs(); renderPriceComparison(); renderBonCommandeForm();
+  notify('✅ Tarif enregistré pour ' + articleNom);
+}
+
+function deleteTarif(id) {
+  db.tarifs = db.tarifs.filter(t => t.id != id);
+  saveData(); renderTarifs(); renderPriceComparison(); renderBonCommandeForm();
+  notify('🗑 Tarif supprimé');
+}
+
+function toggleRupture(id) {
+  const t = db.tarifs.find(x => x.id == id); if (!t) return;
+  t.rupture = !t.rupture;
+  saveData(); renderTarifs(); renderPriceComparison(); renderBonCommandeForm();
+  notify(t.rupture ? '🔴 Rupture de stock enregistrée' : '✅ Article remis en stock');
+}
+
+function renderTarifs() {
+  if (!selectedFournisseurId) return;
+  const tarifs = (db.tarifs||[]).filter(t => String(t.fournisseurId) === String(selectedFournisseurId));
+  const wrap = document.getElementById('tarif-table-wrap');
+  if (!tarifs.length) { wrap.innerHTML = '<div class="empty"><div class="icon">💲</div>Aucun tarif pour ce fournisseur.</div>'; return; }
+  let html = `<table><thead><tr><th>Article</th><th>Prix unitaire</th><th>Délai (j)</th><th>Qté min</th><th>Notes</th><th>Disponibilité</th><th></th></tr></thead><tbody>`;
+  for (const t of tarifs) {
+    const art = db.articles.find(a => a.nom === t.articleNom);
+    const prixRef = art && art.prixAchat ? art.prixAchat : null;
+    const diff = prixRef ? t.prixUnitaire - prixRef : null;
+    const diffBadge = diff !== null
+      ? `<span class="marge-pill ${diff<=0?'marge-pos':'marge-neg'}" style="margin-left:4px;">${diff<=0?'▼':'▲'}${Math.abs(diff).toLocaleString('fr')} Ar</span>`
+      : '';
+    const ruptureBadge = t.rupture ? `<span class="badge-rupture" style="margin-left:6px;">Rupture</span>` : '';
+    const ruptureBtn = t.rupture
+      ? `<button class="btn-dispo" onclick="toggleRupture(${t.id})">✅ Rétablir</button>`
+      : `<button class="btn-rupture" onclick="toggleRupture(${t.id})">🔴 Rupture</button>`;
+    html += `<tr class="${t.rupture ? 'tarif-row-rupture' : ''}">
+      <td><strong>${t.articleNom}</strong>${ruptureBadge}</td>
+      <td>${fmt(t.prixUnitaire)}${diffBadge}</td>
+      <td>${t.delaiJours ?? '—'}</td>
+      <td>${t.qteMin ?? '—'}</td>
+      <td style="color:#64748b;font-size:12px">${t.notes||'—'}</td>
+      <td>${ruptureBtn}</td>
+      <td><button class="btn btn-danger" onclick="deleteTarif(${t.id})">✕</button></td>
+    </tr>`;
+  }
+  wrap.innerHTML = html + '</tbody></table>';
+}
+
+function renderFournisseurs() {
+  document.getElementById('fourn-count').textContent = db.fournisseurs.length;
+  const wrap = document.getElementById('fournisseurs-list');
+  if (!db.fournisseurs.length) {
+    wrap.innerHTML = '<div class="empty"><div class="icon">🏪</div>Aucun fournisseur. Commencez par en ajouter un !</div>';
+    return;
+  }
+  wrap.innerHTML = db.fournisseurs.map(f => {
+    const nTarifs = db.tarifs.filter(t => t.fournisseurId == f.id).length;
+    const meta = [f.telephone, f.email, f.adresse].filter(Boolean).join(' · ') || 'Aucune coordonnée';
+    return `<div class="fourn-card" id="fourn-card-${f.id}" onclick="selectFournisseur(${f.id})">
+      <div class="fourn-avatar">🏪</div>
+      <div class="fourn-info">
+        <strong>${f.nom}</strong>
+        <div class="meta">${meta}</div>
+        <div class="meta" style="margin-top:2px;">${nTarifs} tarif${nTarifs>1?'s':''} enregistré${nTarifs>1?'s':''}</div>
+      </div>
+      <div class="fourn-actions" onclick="event.stopPropagation()">
+        <button class="btn btn-edit btn-sm" onclick="editFournisseur(${f.id})">✏️</button>
+        <button class="btn btn-danger" onclick="deleteFournisseur(${f.id})">✕</button>
+      </div>
+    </div>`;
+  }).join('');
+  // Restore selection highlight
+  if (selectedFournisseurId) {
+    const card = document.getElementById('fourn-card-' + selectedFournisseurId);
+    if (card) card.classList.add('selected');
+  }
+  renderPriceComparison();
+  renderBonCommandeForm();
+}
+
+// ─── PRICE COMPARISON ────────────────────────────────────
+function renderPriceComparison() {
+  const wrap = document.getElementById('price-comparison-wrap');
+  if (!db.fournisseurs.length || !db.articles.length) {
+    wrap.innerHTML = '<div class="empty"><div class="icon">📊</div>Ajoutez des fournisseurs et des tarifs pour voir la comparaison.</div>';
+    return;
+  }
+  // Find articles that have at least one tarif
+  const articleNoms = [...new Set(db.tarifs.map(t => t.articleNom))];
+  if (!articleNoms.length) {
+    wrap.innerHTML = '<div class="empty"><div class="icon">📊</div>Ajoutez des tarifs pour voir la comparaison.</div>';
+    return;
+  }
+  // Build matrix — rupture shown in grey, excluded from best price
+  let html = `<div class="table-wrap"><table><thead><tr><th>Article</th>`;
+  for (const f of db.fournisseurs) html += `<th class="price-cell">${f.nom}</th>`;
+  html += `<th class="price-cell">Meilleur prix dispo</th></tr></thead><tbody>`;
+  for (const nom of articleNoms) {
+    const tarifs = db.fournisseurs.map(f => {
+      return db.tarifs.find(x => x.fournisseurId == f.id && x.articleNom === nom) || null;
+    });
+    const dispos = tarifs.filter(t => t && !t.rupture);
+    const bestPrix = dispos.length ? Math.min(...dispos.map(t => t.prixUnitaire)) : null;
+    const bestFourn = bestPrix !== null ? db.fournisseurs[tarifs.findIndex(t => t && !t.rupture && t.prixUnitaire === bestPrix)] : null;
+    html += `<tr><td><strong>${nom}</strong></td>`;
+    tarifs.forEach(t => {
+      if (!t) { html += `<td>—</td>`; return; }
+      if (t.rupture) { html += `<td class="price-cell" style="color:#fca5a5;text-decoration:line-through;" title="Rupture de stock">🔴 ${fmt(t.prixUnitaire)}</td>`; return; }
+      const isBest = t.prixUnitaire === bestPrix;
+      html += `<td class="${isBest ? 'price-cell best-price' : 'price-cell worst-price'}">${isBest ? `<span class="price-tag"><span class="crown">🏆</span>${fmt(t.prixUnitaire)}</span>` : fmt(t.prixUnitaire)}</td>`;
+    });
+    html += `<td class="price-cell best-price" style="font-weight:700;">${bestPrix !== null ? `${fmt(bestPrix)}<div style="font-size:11px;color:#16a34a;font-weight:400">${bestFourn?bestFourn.nom:''}</div>` : '<span style="color:#dc2626;font-size:12px;">Tous en rupture</span>'}</td></tr>`;
+  }
+  html += '</tbody></table></div>';
+  wrap.innerHTML = html;
+}
+
+// ─── BON DE COMMANDE ─────────────────────────────────────
+function renderBonCommandeForm() {
+  const wrap = document.getElementById('bon-commande-form');
+  const articleNoms = [...new Set(db.tarifs.map(t => t.articleNom))];
+  if (!articleNoms.length) {
+    wrap.innerHTML = '<div style="color:#94a3b8;font-size:13px;">Aucun tarif enregistré. Ajoutez des tarifs fournisseurs pour générer des bons de commande.</div>';
+    return;
+  }
+  let html = `<div class="form-grid">`;
+  for (const nom of articleNoms) {
+    const dispos = db.tarifs.filter(t => t.articleNom === nom && !t.rupture);
+    const enRupture = db.tarifs.filter(t => t.articleNom === nom && t.rupture);
+    const best = dispos.length ? Math.min(...dispos.map(t => t.prixUnitaire)) : null;
+    const bestFourn = best !== null ? db.fournisseurs.find(f => f.id == dispos.find(t => t.prixUnitaire === best).fournisseurId) : null;
+    const ruptureInfo = enRupture.length && dispos.length === 0
+      ? `<span style="font-size:11px;color:#dc2626;">🔴 Rupture chez tous les fournisseurs</span>`
+      : enRupture.length
+        ? `<span style="font-size:10px;color:#ef4444;">${enRupture.length} fourn. en rupture</span>`
+        : '';
+    const inputDisabled = best === null ? 'disabled style="opacity:.4;"' : '';
+    html += `<div class="form-group">
+      <label>${nom}</label>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;">
+        <input type="number" id="bc-qty-${encodeId(nom)}" placeholder="Qté" min="0" ${inputDisabled} style="width:90px;border:1px solid #d1d5db;border-radius:8px;padding:8px 10px;font-size:13px;outline:none;">
+        ${best !== null ? `<span style="font-size:11px;color:#16a34a;">🏆 ${fmt(best)} — ${bestFourn ? bestFourn.nom : ''}</span>` : ''}
+        ${ruptureInfo}
+      </div>
+    </div>`;
+  }
+  html += `</div>`;
+  wrap.innerHTML = html;
+}
+
+function encodeId(nom) { return nom.replace(/[^a-zA-Z0-9]/g, '_'); }
+
+function generateBonCommande() {
+  const articleNoms = [...new Set(db.tarifs.map(t => t.articleNom))];
+  const orders = [];
+  for (const nom of articleNoms) {
+    const qty = parseInt(document.getElementById('bc-qty-' + encodeId(nom))?.value) || 0;
+    if (qty <= 0) continue;
+    // Best price among available (non-ruptured) tarifs only
+    const tarifs = db.tarifs.filter(t => t.articleNom === nom && !t.rupture);
+    if (!tarifs.length) continue;
+    const best = tarifs.reduce((a, b) => a.prixUnitaire <= b.prixUnitaire ? a : b);
+    const fourn = db.fournisseurs.find(f => f.id == best.fournisseurId);
+    if (!fourn) continue;
+    orders.push({ nom, qty, prixUnitaire: best.prixUnitaire, total: qty * best.prixUnitaire, fournisseur: fourn, tarif: best });
+  }
+  const result = document.getElementById('bon-commande-result');
+  if (!orders.length) { result.innerHTML = '<div class="art-hint">Entrez au moins une quantité.</div>'; return; }
+  // Group by supplier
+  const byFourn = {};
+  for (const o of orders) {
+    const key = o.fournisseur.id;
+    if (!byFourn[key]) byFourn[key] = { fournisseur: o.fournisseur, lines: [], total: 0 };
+    byFourn[key].lines.push(o);
+    byFourn[key].total += o.total;
+  }
+  const today = new Date().toLocaleDateString('fr-FR');
+  let html = '';
+  for (const bloc of Object.values(byFourn)) {
+    const f = bloc.fournisseur;
+    html += `<div class="bc-fourn-block">
+      <div class="bc-fourn-header">
+        <h3>🏪 ${f.nom}</h3>
+        <span style="font-size:13px;opacity:.85">Bon de commande · ${today}</span>
+      </div>
+      <div class="bc-fourn-body">
+        <table style="width:100%;border-collapse:collapse;font-size:13px;">
+          <thead><tr style="background:#f8fafc;">
+            <th style="padding:10px 16px;text-align:left;font-size:11px;font-weight:600;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;">Article</th>
+            <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;">Qté</th>
+            <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;">Prix unit.</th>
+            <th style="padding:10px 16px;text-align:right;font-size:11px;font-weight:600;text-transform:uppercase;color:#64748b;border-bottom:1px solid #e2e8f0;">Total</th>
+          </tr></thead><tbody>`;
+    for (const line of bloc.lines) {
+      html += `<tr style="border-bottom:1px solid #f1f5f9;">
+        <td style="padding:10px 16px;"><strong>${line.nom}</strong>${line.tarif.delaiJours ? `<span style="font-size:11px;color:#64748b;margin-left:6px;">Délai: ${line.tarif.delaiJours}j</span>` : ''}${line.tarif.notes ? `<span style="font-size:11px;color:#94a3b8;margin-left:6px;font-style:italic">${line.tarif.notes}</span>` : ''}</td>
+        <td style="padding:10px 16px;text-align:right;">${line.qty}</td>
+        <td style="padding:10px 16px;text-align:right;">${fmt(line.prixUnitaire)}</td>
+        <td style="padding:10px 16px;text-align:right;font-weight:600;">${fmt(line.total)}</td>
+      </tr>`;
+    }
+    html += `<tr class="bc-total-row">
+      <td colspan="3" style="padding:12px 16px;text-align:right;font-size:13px;">Total commande chez ${f.nom}</td>
+      <td style="padding:12px 16px;text-align:right;font-size:15px;font-weight:700;color:#4f46e5;">${fmt(bloc.total)}</td>
+    </tr>`;
+    html += '</tbody></table>';
+    if (f.telephone||f.email||f.adresse) {
+      html += `<div style="padding:10px 16px;background:#f8fafc;font-size:12px;color:#64748b;border-top:1px solid #e2e8f0;">
+        📞 ${f.telephone||'—'} &nbsp;·&nbsp; ✉️ ${f.email||'—'} &nbsp;·&nbsp; 📍 ${f.adresse||'—'}
+      </div>`;
+    }
+    html += '</div></div>';
+  }
+  // Grand total
+  const grandTotal = orders.reduce((s,o) => s+o.total, 0);
+  html += `<div style="text-align:right;margin-top:12px;padding:16px;background:#eef2ff;border-radius:12px;border:1px solid #c7d2fe;">
+    <span style="font-size:13px;color:#4338ca;">Total général (tous fournisseurs)</span><br>
+    <span style="font-size:22px;font-weight:700;color:#4f46e5;">${fmt(grandTotal)}</span>
+  </div>`;
+  result.innerHTML = html;
+}
+
+let chartTx=null, chartArt=null;
+function renderDashboard() {
+  const txs=db.transactions, achats=txs.filter(t=>t.type==='achat'), ventes=txs.filter(t=>t.type==='vente');
+  const totalInvesti=achats.reduce((s,t)=>s+t.total,0), totalRevenus=ventes.reduce((s,t)=>s+t.total,0);
+  const totalBenefice=ventes.reduce((s,t)=>s+(t.benefice||0),0);
+  const stock=computeStock(), totalStock=Object.values(stock).reduce((s,v)=>s+v.qte,0);
+  document.getElementById('stat-investi').textContent=fmt(totalInvesti);
+  document.getElementById('stat-revenus').textContent=fmt(totalRevenus);
+  const bEl=document.getElementById('stat-benefice');
+  bEl.textContent=fmt(totalBenefice); bEl.style.color=totalBenefice>=0?'#16a34a':'#dc2626';
+  document.getElementById('stat-stock').textContent=totalStock;
+  document.getElementById('stat-catalogue').textContent=db.articles.length;
+  const recent=txs.slice(0,5), recWrap=document.getElementById('recent-transactions');
+  if (!recent.length) { recWrap.innerHTML='<div class="empty"><div class="icon">📊</div>Aucune transaction encore.</div>'; }
+  else {
+    let html=`<table><thead><tr><th>Date</th><th>Type</th><th>Article</th><th>Qté</th><th>Total</th><th>Par</th></tr></thead><tbody>`;
+    for (const t of recent) {
+      const badge=t.type==='achat'?'<span class="badge badge-buy">Achat</span>':'<span class="badge badge-sell">Vente</span>';
+      const ub=t.user&&t.user!=='—'?`<span style="background:#f1f5f9;border-radius:99px;padding:2px 8px;font-size:11px;color:#374151">${t.user}</span>`:'—';
+      html+=`<tr><td>${fmtDate(t.date)}</td><td>${badge}</td><td>${t.article}</td><td>${t.qte}</td><td>${fmt(t.total)}</td><td>${ub}</td></tr>`;
+    }
+    recWrap.innerHTML=html+'</tbody></table>';
+  }
+  const byDay={};
+  for (const t of txs) { if(!byDay[t.date]) byDay[t.date]={achat:0,vente:0}; byDay[t.date][t.type]+=t.total; }
+  const days=Object.keys(byDay).sort().slice(-14);
+  if (chartTx) chartTx.destroy();
+  chartTx=new Chart(document.getElementById('chartTransactions').getContext('2d'),{
+    type:'bar', data:{ labels:days.map(d=>fmtDate(d)),
+      datasets:[{label:'Achats',data:days.map(d=>byDay[d].achat),backgroundColor:'#bfdbfe',borderColor:'#3b82f6',borderWidth:1},{label:'Ventes',data:days.map(d=>byDay[d].vente),backgroundColor:'#bbf7d0',borderColor:'#22c55e',borderWidth:1}]},
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{font:{size:11}}}},scales:{y:{ticks:{font:{size:10},callback:v=>(v/1000)+'k Ar'}},x:{ticks:{font:{size:10}}}}}
+  });
+  const byArticle={};
+  for (const t of achats) byArticle[t.article]=(byArticle[t.article]||0)+t.qte;
+  const sorted=Object.entries(byArticle).sort((a,b)=>b[1]-a[1]).slice(0,6);
+  if (chartArt) chartArt.destroy();
+  const ctx2=document.getElementById('chartArticles').getContext('2d');
+  if (sorted.length) {
+    chartArt=new Chart(ctx2,{type:'doughnut',data:{labels:sorted.map(e=>e[0]),datasets:[{data:sorted.map(e=>e[1]),backgroundColor:['#818cf8','#34d399','#fbbf24','#f87171','#60a5fa','#a78bfa']}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{position:'right',labels:{font:{size:11},boxWidth:12}}}}});
+  } else { ctx2.canvas.parentElement.innerHTML='<div class="empty" style="padding:60px 0"><div class="icon">📊</div>Pas encore de données.</div>'; }
+}
+</script>
+</body>
+</html>
